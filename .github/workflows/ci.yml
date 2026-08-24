@@ -36,7 +36,7 @@ jobs:
       - name: PostgreSQL read-only smoke
         run: |
           docker compose up -d --wait
-          VECTOR_MODE=local npm run smoke:postgres
+          POLICYGRAPH_AUDIT_PATH=.policygraph/postgres-smoke-audit.jsonl VECTOR_MODE=local npm run smoke:postgres
           node --env-file=.env scripts/verify-audit.ts .policygraph/postgres-smoke-audit.jsonl
       - name: Stop PostgreSQL
         if: always()
