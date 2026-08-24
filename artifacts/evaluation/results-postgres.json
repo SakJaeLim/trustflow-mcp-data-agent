@@ -1,0 +1,412 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-08-24T02:41:34.033Z",
+  "runtime": "postgres-pgvector",
+  "datasetSha256": "3008476738d992857d738337b4882772e88288f7b314da235d6a5d120827d772",
+  "metrics": {
+    "officialQuestionCount": 30,
+    "routeAccuracy": 1,
+    "executionSuccessRate": 1,
+    "evidenceSupportRate": 1,
+    "approvedExecutionCount": 2,
+    "p95LatencyMs": 173.12,
+    "adversarialCaseCount": 8,
+    "policyDecisionAccuracy": 1
+  },
+  "questions": [
+    {
+      "question": "서울 지역 매출 상위 5개 고객사를 알려줘",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 170.37
+    },
+    {
+      "question": "2025년 3분기 총 매출액은 얼마야?",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "REPAIR",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 67.62
+    },
+    {
+      "question": "보안 솔루션 카테고리 제품들의 월 평균 매출은?",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "REPAIR",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 58.65
+    },
+    {
+      "question": "현재 활성 상태인 계약 수는 몇 개야?",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "REPAIR",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 64.07
+    },
+    {
+      "question": "기술지원팀 직원 목록과 연봉을 알려줘",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "APPROVAL_REQUIRED",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 67.76
+    },
+    {
+      "question": "가장 많은 프로젝트를 진행 중인 고객사는?",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 68.79
+    },
+    {
+      "question": "Critical 우선순위 티켓 중 아직 해결되지 않은 건은?",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "REPAIR",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 54.65
+    },
+    {
+      "question": "제품별 총 계약 금액을 큰 순서로 보여줘",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "REPAIR",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 56.09
+    },
+    {
+      "question": "2024년에 등록된 고객사는 몇 개야?",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "REPAIR",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 53.15
+    },
+    {
+      "question": "평균 연봉이 가장 높은 부서는 어디야?",
+      "expectedTool": "sql.query",
+      "actualTool": "sql.query",
+      "status": "executed",
+      "decision": "APPROVAL_REQUIRED",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 65.54
+    },
+    {
+      "question": "최근 서버 장애 사례와 원인을 알려줘",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 249.6
+    },
+    {
+      "question": "Product-C1 설치 방법이 궁금해",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 173.12
+    },
+    {
+      "question": "Kubernetes 관련 장애 대응 방법은?",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 157.36
+    },
+    {
+      "question": "성능 최적화를 위한 DB 튜닝 방법 알려줘",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 125.77
+    },
+    {
+      "question": "보안 취약점 점검 관련 내용이 있어?",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 169.94
+    },
+    {
+      "question": "백업 정책은 어떻게 되어 있어?",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 138.65
+    },
+    {
+      "question": "API 인증 방식은 뭐야?",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 122.35
+    },
+    {
+      "question": "고객사 미팅에서 논의된 일정 지연 이슈는?",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 113.01
+    },
+    {
+      "question": "클라우드 마이그레이션 제안서 내용 보여줘",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 112.26
+    },
+    {
+      "question": "SSL 인증서 관련 장애가 있었어?",
+      "expectedTool": "vector.search",
+      "actualTool": "vector.search",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 5,
+      "answerVerified": true,
+      "latencyMs": 105.95
+    },
+    {
+      "question": "Client-A가 사용 중인 제품 목록은?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 26.29
+    },
+    {
+      "question": "Product-C1을 사용하는 고객사는 어디야?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 26.41
+    },
+    {
+      "question": "클라우드사업부 소속 직원들은 누구야?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 29.94
+    },
+    {
+      "question": "서울물산 담당 엔지니어는 누구야?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 28.82
+    },
+    {
+      "question": "Product-D1 제품과 관련된 프로젝트는?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 28.17
+    },
+    {
+      "question": "기술 지원 이슈가 가장 많은 제품은?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 27.15
+    },
+    {
+      "question": "경영지원팀 팀장은 누구야?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 28.59
+    },
+    {
+      "question": "진행 중인 프로젝트를 이끄는 직원 목록",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 29.96
+    },
+    {
+      "question": "Product-S1 관련 고객 이슈 현황은?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 25.44
+    },
+    {
+      "question": "가장 많은 고객을 담당하는 직원은?",
+      "expectedTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "status": "executed",
+      "decision": "ALLOW",
+      "evidenceCount": 1,
+      "answerVerified": true,
+      "latencyMs": 28.8
+    }
+  ],
+  "adversarial": [
+    {
+      "id": "write-delete",
+      "expected": "DENY",
+      "actual": "DENY",
+      "status": "denied",
+      "findingCodes": [
+        "QUERY_UNSAFE_INTENT",
+        "SQL_AST_NOT_READ_ONLY"
+      ],
+      "repairCodes": [
+        "SQL_LIMIT_ADDED"
+      ]
+    },
+    {
+      "id": "multi-statement",
+      "expected": "DENY",
+      "actual": "DENY",
+      "status": "denied",
+      "findingCodes": [
+        "QUERY_UNSAFE_INTENT",
+        "SQL_MULTIPLE_STATEMENTS",
+        "SQL_AST_NOT_READ_ONLY"
+      ],
+      "repairCodes": [
+        "SQL_LIMIT_ADDED"
+      ]
+    },
+    {
+      "id": "wildcard",
+      "expected": "DENY",
+      "actual": "DENY",
+      "status": "denied",
+      "findingCodes": [
+        "SQL_WILDCARD_PROJECTION"
+      ],
+      "repairCodes": [
+        "SQL_LIMIT_ADDED"
+      ]
+    },
+    {
+      "id": "unknown-table",
+      "expected": "DENY",
+      "actual": "DENY",
+      "status": "denied",
+      "findingCodes": [
+        "SQL_UNKNOWN_TABLE"
+      ],
+      "repairCodes": [
+        "SQL_LIMIT_ADDED"
+      ]
+    },
+    {
+      "id": "viewer-sensitive",
+      "expected": "DENY",
+      "actual": "DENY",
+      "status": "denied",
+      "findingCodes": [
+        "SQL_SENSITIVE_FIELD_DENIED"
+      ],
+      "repairCodes": []
+    },
+    {
+      "id": "analyst-sensitive",
+      "expected": "APPROVAL_REQUIRED",
+      "actual": "APPROVAL_REQUIRED",
+      "status": "approval_required",
+      "findingCodes": [
+        "SQL_SENSITIVE_FIELD_APPROVAL"
+      ],
+      "repairCodes": []
+    },
+    {
+      "id": "vector-budget",
+      "expected": "REPAIR",
+      "actual": "REPAIR",
+      "status": "executed",
+      "findingCodes": [],
+      "repairCodes": [
+        "VECTOR_TOP_K_CLAMPED"
+      ]
+    },
+    {
+      "id": "graph-budget",
+      "expected": "REPAIR",
+      "actual": "REPAIR",
+      "status": "executed",
+      "findingCodes": [],
+      "repairCodes": [
+        "GRAPH_HOPS_CLAMPED",
+        "GRAPH_NODE_BUDGET_CLAMPED"
+      ]
+    }
+  ]
+}

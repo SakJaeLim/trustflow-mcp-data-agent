@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Create local secrets
+        run: npm run setup:local
+      - name: Fetch checksum-pinned contest fixture
+        run: npm run fetch:data
+      - name: Static and unit verification
+        run: |
+          npm run typecheck
+          npm test
+      - name: Dependency audit and compliance
+        run: |
+          npm audit --audit-level=high
+          npm run compliance
+      - name: PostgreSQL read-only smoke
+        run: |
+          docker compose up -d --wait
+          VECTOR_MODE=local npm run smoke:postgres
+          node --env-file=.env scripts/verify-audit.ts .policygraph/postgres-smoke-audit.jsonl
+      - name: Stop PostgreSQL
+        if: always()
+        run: docker compose down
+      - name: Upload compliance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: policygraph-compliance
+          path: artifacts/compliance/
+          if-no-files-found: error
+          retention-days: 14

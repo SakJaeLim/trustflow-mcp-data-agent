@@ -1,0 +1,26 @@
+name: policygraph
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg16-bookworm@sha256:ccc6e83d6e35e931dc7c5def2022729d5a6c370318d099181995567ff1fb4d6b
+    environment:
+      POSTGRES_DB: companyx
+      POSTGRES_USER: policygraph_admin
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Run npm run setup:local first}
+      POLICYGRAPH_READER_PASSWORD: ${POLICYGRAPH_READER_PASSWORD:?Run npm run setup:local first}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-54330}:5432"
+    volumes:
+      - companyx_pgdata:/var/lib/postgresql/data
+      - ./data/companyx/sql/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./data/companyx/sql/02-data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+      - ./db/init/03-readonly-role.sql:/docker-entrypoint-initdb.d/03-readonly-role.sql:ro
+      - ./db/init/04-vector-index.sql:/docker-entrypoint-initdb.d/04-vector-index.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U policygraph_admin -d companyx"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  companyx_pgdata:

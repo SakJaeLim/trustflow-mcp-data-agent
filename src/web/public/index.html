@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrustFlow · Company-X</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23b9ff4a'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-size='12' font-family='monospace' font-weight='700' fill='%23090b0d'%3ETF%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">TF</span><strong>TrustFlow</strong><span>PolicyGraph · Company-X evidence console</span></div>
+    <div class="health"><i></i><span id="health-label">runtime 확인 중</span></div>
+  </header>
+
+  <div class="shell">
+    <aside class="examples" aria-label="공식 예시 질문">
+      <div class="aside-head"><span>OFFICIAL SET</span><strong>30 questions</strong></div>
+      <nav id="question-list"></nav>
+    </aside>
+
+    <main class="workspace">
+      <section class="query-zone">
+        <div class="query-meta">
+          <label for="actor-role">SERVER ACTOR ROLE</label>
+          <output id="actor-role">loading</output>
+        </div>
+        <textarea id="question" rows="3" spellcheck="false">최근 서버 장애 사례와 원인을 알려줘</textarea>
+        <button id="run" class="run-button">계획 검증 후 실행 <span>↗</span></button>
+      </section>
+
+      <section class="decision-line" aria-live="polite">
+        <div><span>PLAN</span><strong id="plan-state">READY</strong></div>
+        <b></b>
+        <div><span>POLICY</span><strong id="policy-state">WAITING</strong></div>
+        <b></b>
+        <div><span>EXECUTION</span><strong id="execution-state">WAITING</strong></div>
+        <b></b>
+        <div><span>EVIDENCE</span><strong id="evidence-state">0</strong></div>
+      </section>
+
+      <section class="answer-zone">
+        <div class="section-label"><span>VERIFIED ANSWER</span><em id="latency">—</em></div>
+        <div id="answer" class="answer empty">질문을 실행하면 정책 판정과 근거가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="evidence-zone">
+        <div class="section-label"><span>EVIDENCE LEDGER</span><em id="verification">미검증</em></div>
+        <div id="evidence-list" class="evidence-list"></div>
+      </section>
+    </main>
+
+    <aside class="inspector">
+      <div class="inspector-head"><span>POLICY INSPECTOR</span><strong id="decision-badge">IDLE</strong></div>
+      <section>
+        <h2>Matched policies</h2>
+        <div id="policy-list" class="policy-list"><span class="muted">아직 판정 없음</span></div>
+      </section>
+      <section>
+        <h2>Repairs & findings</h2>
+        <div id="finding-list" class="finding-list"><span class="muted">아직 판정 없음</span></div>
+      </section>
+      <section>
+        <h2>Typed QueryPlan</h2>
+        <pre id="plan-json">{}</pre>
+      </section>
+      <section class="scenarios">
+        <h2>Policy stress test</h2>
+        <button data-scenario="write-attack">쓰기 공격 차단</button>
+        <button data-scenario="viewer-salary">민감필드 권한 차단</button>
+        <button data-scenario="budget-repair">검색예산 자동 보정</button>
+      </section>
+    </aside>
+  </div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

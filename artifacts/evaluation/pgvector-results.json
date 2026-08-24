@@ -1,0 +1,864 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-08-24T02:41:48.403Z",
+  "evaluator": "manual-public-fixture-labels",
+  "limitations": "This is a public-fixture retrieval evaluation, not a hidden-test or production-quality claim.",
+  "embedding": {
+    "provider": "ollama",
+    "model": "nomic-embed-text"
+  },
+  "corpus": {
+    "documents": 40,
+    "chunks": 40,
+    "embeddedChunks": 40
+  },
+  "metrics": {
+    "labeledQuestionCount": 10,
+    "hitAt1": 1,
+    "hitAt3": 1,
+    "hitAt5": 1,
+    "meanRecallAt1": 0.5843,
+    "meanRecallAt3": 0.8529,
+    "meanRecallAt5": 0.9714,
+    "mrrAt10": 1,
+    "coldStartWarmupMs": 148.71,
+    "p50LatencyMs": 180.4,
+    "p95LatencyMs": 215.02
+  },
+  "questions": [
+    {
+      "question": "최근 서버 장애 사례와 원인을 알려줘",
+      "relevantDocIds": [
+        "DOC-010"
+      ],
+      "rationale": "DOC-010 is the chronologically latest incident report (2026-02-16) and contains both the incident and root-cause analysis.",
+      "labelEvidence": [
+        "data/companyx/documents/index.json",
+        "data/companyx/documents/DOC-010.md:3"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-010",
+          "title": "[장애보고] Client-J Product-S3 서비스 장애 (2026-02-16)",
+          "score": 0.998277
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-003",
+          "title": "[장애보고] Client-C Product-S1 서비스 장애 (2025-11-08)",
+          "score": 0.979123
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-001",
+          "title": "[장애보고] Client-A Product-C1 서비스 장애 (2025-12-27)",
+          "score": 0.948066
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-006",
+          "title": "[장애보고] Client-F Product-D2 서비스 장애 (2025-10-19)",
+          "score": 0.905376
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-002",
+          "title": "[장애보고] Client-B Product-C2 서비스 장애 (2025-04-22)",
+          "score": 0.83544
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-009",
+          "title": "[장애보고] Client-I Product-D3 서비스 장애 (2025-03-17)",
+          "score": 0.812413
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-008",
+          "title": "[장애보고] Client-H Product-C4 서비스 장애 (2025-04-26)",
+          "score": 0.784275
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-007",
+          "title": "[장애보고] Client-G Product-C3 서비스 장애 (2025-03-20)",
+          "score": 0.751624
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-005",
+          "title": "[장애보고] Client-E Product-D1 서비스 장애 (2024-11-15)",
+          "score": 0.657834
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-004",
+          "title": "[장애보고] Client-D Product-S2 서비스 장애 (2024-08-05)",
+          "score": 0.59111
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 1,
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "latencyMs": 180.4
+    },
+    {
+      "question": "Product-C1 설치 방법이 궁금해",
+      "relevantDocIds": [
+        "DOC-011"
+      ],
+      "rationale": "DOC-011 is the Product-C1 installation guide and contains system requirements and installation steps.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-011.md:1",
+        "data/companyx/documents/DOC-011.md:9"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-011",
+          "title": "[기술문서] Product-C1 설치 가이드",
+          "score": 1.091547
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-016",
+          "title": "[기술문서] Product-D2 설치 가이드",
+          "score": 0.726978
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-031",
+          "title": "[제안서] Client-F Product-C1 도입 제안",
+          "score": 0.646183
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-001",
+          "title": "[장애보고] Client-A Product-C1 서비스 장애 (2025-12-27)",
+          "score": 0.637301
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-012",
+          "title": "[기술문서] Product-C2 아키텍처 설계서",
+          "score": 0.517973
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-017",
+          "title": "[기술문서] Product-C3 아키텍처 설계서",
+          "score": 0.510991
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-019",
+          "title": "[기술문서] Product-D3 성능 튜닝 가이드",
+          "score": 0.488696
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-020",
+          "title": "[기술문서] Product-S3 API 레퍼런스",
+          "score": 0.486986
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-015",
+          "title": "[기술문서] Product-D1 API 레퍼런스",
+          "score": 0.486986
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-014",
+          "title": "[기술문서] Product-S2 성능 튜닝 가이드",
+          "score": 0.481128
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 1,
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "latencyMs": 203.27
+    },
+    {
+      "question": "Kubernetes 관련 장애 대응 방법은?",
+      "relevantDocIds": [
+        "DOC-007"
+      ],
+      "rationale": "DOC-007 directly describes a Kubernetes Pod OOM incident, its cause, and corrective actions.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-007.md:10",
+        "data/companyx/documents/DOC-007.md:13",
+        "data/companyx/documents/DOC-007.md:16"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-007",
+          "title": "[장애보고] Client-G Product-C3 서비스 장애 (2025-03-20)",
+          "score": 0.815562
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-025",
+          "title": "[회의록] Client-E 장애 대응 회의 (2026-06-24)",
+          "score": 0.701019
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-010",
+          "title": "[장애보고] Client-J Product-S3 서비스 장애 (2026-02-16)",
+          "score": 0.689811
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-008",
+          "title": "[장애보고] Client-H Product-C4 서비스 장애 (2025-04-26)",
+          "score": 0.688175
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-009",
+          "title": "[장애보고] Client-I Product-D3 서비스 장애 (2025-03-17)",
+          "score": 0.685426
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-004",
+          "title": "[장애보고] Client-D Product-S2 서비스 장애 (2024-08-05)",
+          "score": 0.684616
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-006",
+          "title": "[장애보고] Client-F Product-D2 서비스 장애 (2025-10-19)",
+          "score": 0.681161
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-002",
+          "title": "[장애보고] Client-B Product-C2 서비스 장애 (2025-04-22)",
+          "score": 0.68094
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-003",
+          "title": "[장애보고] Client-C Product-S1 서비스 장애 (2025-11-08)",
+          "score": 0.677938
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-005",
+          "title": "[장애보고] Client-E Product-D1 서비스 장애 (2024-11-15)",
+          "score": 0.675333
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 1,
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "latencyMs": 176.59
+    },
+    {
+      "question": "성능 최적화를 위한 DB 튜닝 방법 알려줘",
+      "relevantDocIds": [
+        "DOC-014",
+        "DOC-019"
+      ],
+      "rationale": "Both performance-tuning guides have a DB optimization section covering connection pools, indexes, and query caching.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-014.md:3",
+        "data/companyx/documents/DOC-019.md:3"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-019",
+          "title": "[기술문서] Product-D3 성능 튜닝 가이드",
+          "score": 0.850521
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-014",
+          "title": "[기술문서] Product-S2 성능 튜닝 가이드",
+          "score": 0.83783
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-001",
+          "title": "[장애보고] Client-A Product-C1 서비스 장애 (2025-12-27)",
+          "score": 0.585638
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-026",
+          "title": "[회의록] Client-F 중간 점검 (2026-01-27)",
+          "score": 0.57871
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-030",
+          "title": "[회의록] Client-J 중간 점검 (2025-10-01)",
+          "score": 0.563761
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-010",
+          "title": "[장애보고] Client-J Product-S3 서비스 장애 (2026-02-16)",
+          "score": 0.519568
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-002",
+          "title": "[장애보고] Client-B Product-C2 서비스 장애 (2025-04-22)",
+          "score": 0.517561
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-008",
+          "title": "[장애보고] Client-H Product-C4 서비스 장애 (2025-04-26)",
+          "score": 0.516494
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-009",
+          "title": "[장애보고] Client-I Product-D3 서비스 장애 (2025-03-17)",
+          "score": 0.51516
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-003",
+          "title": "[장애보고] Client-C Product-S1 서비스 장애 (2025-11-08)",
+          "score": 0.513577
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 0.5,
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "latencyMs": 201.12
+    },
+    {
+      "question": "보안 취약점 점검 관련 내용이 있어?",
+      "relevantDocIds": [
+        "DOC-021",
+        "DOC-022",
+        "DOC-024",
+        "DOC-028",
+        "DOC-029"
+      ],
+      "rationale": "These five meeting notes explicitly record security-vulnerability assessment findings and follow-up work.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-021.md:12",
+        "data/companyx/documents/DOC-022.md:12",
+        "data/companyx/documents/DOC-024.md:12",
+        "data/companyx/documents/DOC-028.md:12",
+        "data/companyx/documents/DOC-029.md:12"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-029",
+          "title": "[회의록] Client-I 정기 미팅 (2025-07-03)",
+          "score": 0.838952
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-028",
+          "title": "[회의록] Client-H 킥오프 미팅 (2025-03-20)",
+          "score": 0.834812
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-021",
+          "title": "[회의록] Client-A 정기 미팅 (2025-04-21)",
+          "score": 0.833152
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-022",
+          "title": "[회의록] Client-B 정기 미팅 (2026-02-20)",
+          "score": 0.831338
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-024",
+          "title": "[회의록] Client-D 중간 점검 (2026-06-26)",
+          "score": 0.822168
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-026",
+          "title": "[회의록] Client-F 중간 점검 (2026-01-27)",
+          "score": 0.564337
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-030",
+          "title": "[회의록] Client-J 중간 점검 (2025-10-01)",
+          "score": 0.548576
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-032",
+          "title": "[제안서] Client-G Product-C2 도입 제안",
+          "score": 0.485324
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-040",
+          "title": "[제안서] Client-O Product-S3 도입 제안",
+          "score": 0.485205
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-033",
+          "title": "[제안서] Client-H Product-S1 도입 제안",
+          "score": 0.482432
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 0.2,
+      "recallAt3": 0.6,
+      "recallAt5": 1,
+      "latencyMs": 215.02
+    },
+    {
+      "question": "백업 정책은 어떻게 되어 있어?",
+      "relevantDocIds": [
+        "DOC-013",
+        "DOC-018"
+      ],
+      "rationale": "The two operations manuals explicitly state automated backup schedules, retention periods, and storage locations.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-013.md:8",
+        "data/companyx/documents/DOC-018.md:8"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-018",
+          "title": "[기술문서] Product-C4 운영 매뉴얼",
+          "score": 0.59334
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-013",
+          "title": "[기술문서] Product-S1 운영 매뉴얼",
+          "score": 0.591412
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-012",
+          "title": "[기술문서] Product-C2 아키텍처 설계서",
+          "score": 0.493029
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-017",
+          "title": "[기술문서] Product-C3 아키텍처 설계서",
+          "score": 0.486893
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-020",
+          "title": "[기술문서] Product-S3 API 레퍼런스",
+          "score": 0.483532
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-015",
+          "title": "[기술문서] Product-D1 API 레퍼런스",
+          "score": 0.483532
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-019",
+          "title": "[기술문서] Product-D3 성능 튜닝 가이드",
+          "score": 0.47975
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-011",
+          "title": "[기술문서] Product-C1 설치 가이드",
+          "score": 0.468986
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-016",
+          "title": "[기술문서] Product-D2 설치 가이드",
+          "score": 0.468986
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-014",
+          "title": "[기술문서] Product-S2 성능 튜닝 가이드",
+          "score": 0.46721
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 0.5,
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "latencyMs": 144.93
+    },
+    {
+      "question": "API 인증 방식은 뭐야?",
+      "relevantDocIds": [
+        "DOC-015",
+        "DOC-020"
+      ],
+      "rationale": "The two API reference documents contain explicit authentication sections.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-015.md:5",
+        "data/companyx/documents/DOC-020.md:5"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-020",
+          "title": "[기술문서] Product-S3 API 레퍼런스",
+          "score": 0.879869
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-015",
+          "title": "[기술문서] Product-D1 API 레퍼런스",
+          "score": 0.879869
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-012",
+          "title": "[기술문서] Product-C2 아키텍처 설계서",
+          "score": 0.718625
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-017",
+          "title": "[기술문서] Product-C3 아키텍처 설계서",
+          "score": 0.712691
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-006",
+          "title": "[장애보고] Client-F Product-D2 서비스 장애 (2025-10-19)",
+          "score": 0.539418
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-011",
+          "title": "[기술문서] Product-C1 설치 가이드",
+          "score": 0.537086
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-016",
+          "title": "[기술문서] Product-D2 설치 가이드",
+          "score": 0.537086
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-005",
+          "title": "[장애보고] Client-E Product-D1 서비스 장애 (2024-11-15)",
+          "score": 0.53402
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-040",
+          "title": "[제안서] Client-O Product-S3 도입 제안",
+          "score": 0.47805
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-019",
+          "title": "[기술문서] Product-D3 성능 튜닝 가이드",
+          "score": 0.474661
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 0.5,
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "latencyMs": 183.54
+    },
+    {
+      "question": "고객사 미팅에서 논의된 일정 지연 이슈는?",
+      "relevantDocIds": [
+        "DOC-021",
+        "DOC-023",
+        "DOC-025",
+        "DOC-026",
+        "DOC-027",
+        "DOC-029",
+        "DOC-030"
+      ],
+      "rationale": "These meeting notes explicitly mention delayed milestones/tests or an agreed schedule extension.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-021.md:15",
+        "data/companyx/documents/DOC-023.md:12",
+        "data/companyx/documents/DOC-025.md:12",
+        "data/companyx/documents/DOC-026.md:15",
+        "data/companyx/documents/DOC-027.md:12",
+        "data/companyx/documents/DOC-029.md:15",
+        "data/companyx/documents/DOC-030.md:18"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-023",
+          "title": "[회의록] Client-C 정기 미팅 (2025-08-28)",
+          "score": 0.746153
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-029",
+          "title": "[회의록] Client-I 정기 미팅 (2025-07-03)",
+          "score": 0.708807
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-021",
+          "title": "[회의록] Client-A 정기 미팅 (2025-04-21)",
+          "score": 0.703007
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-027",
+          "title": "[회의록] Client-G 정기 미팅 (2026-05-20)",
+          "score": 0.696637
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-026",
+          "title": "[회의록] Client-F 중간 점검 (2026-01-27)",
+          "score": 0.64938
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-025",
+          "title": "[회의록] Client-E 장애 대응 회의 (2026-06-24)",
+          "score": 0.629178
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-028",
+          "title": "[회의록] Client-H 킥오프 미팅 (2025-03-20)",
+          "score": 0.599521
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-022",
+          "title": "[회의록] Client-B 정기 미팅 (2026-02-20)",
+          "score": 0.596047
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-030",
+          "title": "[회의록] Client-J 중간 점검 (2025-10-01)",
+          "score": 0.569975
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-024",
+          "title": "[회의록] Client-D 중간 점검 (2026-06-26)",
+          "score": 0.537154
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 0.1429,
+      "recallAt3": 0.4286,
+      "recallAt5": 0.7143,
+      "latencyMs": 182.07
+    },
+    {
+      "question": "클라우드 마이그레이션 제안서 내용 보여줘",
+      "relevantDocIds": [
+        "DOC-031",
+        "DOC-032"
+      ],
+      "rationale": "DOC-031 and DOC-032 are proposals whose solution descriptions explicitly concern cloud migration.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-031.md:12",
+        "data/companyx/documents/DOC-032.md:12"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-032",
+          "title": "[제안서] Client-G Product-C2 도입 제안",
+          "score": 0.845406
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-035",
+          "title": "[제안서] Client-J Product-D1 도입 제안",
+          "score": 0.843573
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-033",
+          "title": "[제안서] Client-H Product-S1 도입 제안",
+          "score": 0.842494
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-031",
+          "title": "[제안서] Client-F Product-C1 도입 제안",
+          "score": 0.840165
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-040",
+          "title": "[제안서] Client-O Product-S3 도입 제안",
+          "score": 0.760168
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-036",
+          "title": "[제안서] Client-K Product-D2 도입 제안",
+          "score": 0.757682
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-039",
+          "title": "[제안서] Client-N Product-D3 도입 제안",
+          "score": 0.757382
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-038",
+          "title": "[제안서] Client-M Product-C4 도입 제안",
+          "score": 0.755271
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-034",
+          "title": "[제안서] Client-I Product-S2 도입 제안",
+          "score": 0.753772
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-037",
+          "title": "[제안서] Client-L Product-C3 도입 제안",
+          "score": 0.752392
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 0.5,
+      "recallAt3": 0.5,
+      "recallAt5": 1,
+      "latencyMs": 163.63
+    },
+    {
+      "question": "SSL 인증서 관련 장애가 있었어?",
+      "relevantDocIds": [
+        "DOC-005",
+        "DOC-006"
+      ],
+      "rationale": "Both incident reports explicitly identify expired SSL certificates causing HTTPS communication failure.",
+      "labelEvidence": [
+        "data/companyx/documents/DOC-005.md:11",
+        "data/companyx/documents/DOC-006.md:11"
+      ],
+      "ranking": [
+        {
+          "rank": 1,
+          "docId": "DOC-006",
+          "title": "[장애보고] Client-F Product-D2 서비스 장애 (2025-10-19)",
+          "score": 0.878822
+        },
+        {
+          "rank": 2,
+          "docId": "DOC-002",
+          "title": "[장애보고] Client-B Product-C2 서비스 장애 (2025-04-22)",
+          "score": 0.878601
+        },
+        {
+          "rank": 3,
+          "docId": "DOC-005",
+          "title": "[장애보고] Client-E Product-D1 서비스 장애 (2024-11-15)",
+          "score": 0.872994
+        },
+        {
+          "rank": 4,
+          "docId": "DOC-010",
+          "title": "[장애보고] Client-J Product-S3 서비스 장애 (2026-02-16)",
+          "score": 0.585242
+        },
+        {
+          "rank": 5,
+          "docId": "DOC-008",
+          "title": "[장애보고] Client-H Product-C4 서비스 장애 (2025-04-26)",
+          "score": 0.583606
+        },
+        {
+          "rank": 6,
+          "docId": "DOC-009",
+          "title": "[장애보고] Client-I Product-D3 서비스 장애 (2025-03-17)",
+          "score": 0.580857
+        },
+        {
+          "rank": 7,
+          "docId": "DOC-004",
+          "title": "[장애보고] Client-D Product-S2 서비스 장애 (2024-08-05)",
+          "score": 0.580047
+        },
+        {
+          "rank": 8,
+          "docId": "DOC-007",
+          "title": "[장애보고] Client-G Product-C3 서비스 장애 (2025-03-20)",
+          "score": 0.576667
+        },
+        {
+          "rank": 9,
+          "docId": "DOC-003",
+          "title": "[장애보고] Client-C Product-S1 서비스 장애 (2025-11-08)",
+          "score": 0.573369
+        },
+        {
+          "rank": 10,
+          "docId": "DOC-001",
+          "title": "[장애보고] Client-A Product-C1 서비스 장애 (2025-12-27)",
+          "score": 0.567738
+        }
+      ],
+      "reciprocalRank": 1,
+      "hitAt1": 1,
+      "hitAt3": 1,
+      "hitAt5": 1,
+      "recallAt1": 0.5,
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "latencyMs": 162.5
+    }
+  ]
+}

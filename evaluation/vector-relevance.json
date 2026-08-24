@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.0",
+  "labelingMethod": "Manual relevance judgment against the 40 official Company-X Markdown documents. Only documents that directly answer the question are labeled relevant.",
+  "limitations": "This is a public-fixture retrieval evaluation, not a hidden-test or production-quality claim.",
+  "questions": [
+    {
+      "question": "최근 서버 장애 사례와 원인을 알려줘",
+      "relevantDocIds": ["DOC-010"],
+      "rationale": "DOC-010 is the chronologically latest incident report (2026-02-16) and contains both the incident and root-cause analysis.",
+      "evidence": ["data/companyx/documents/index.json", "data/companyx/documents/DOC-010.md:3"]
+    },
+    {
+      "question": "Product-C1 설치 방법이 궁금해",
+      "relevantDocIds": ["DOC-011"],
+      "rationale": "DOC-011 is the Product-C1 installation guide and contains system requirements and installation steps.",
+      "evidence": ["data/companyx/documents/DOC-011.md:1", "data/companyx/documents/DOC-011.md:9"]
+    },
+    {
+      "question": "Kubernetes 관련 장애 대응 방법은?",
+      "relevantDocIds": ["DOC-007"],
+      "rationale": "DOC-007 directly describes a Kubernetes Pod OOM incident, its cause, and corrective actions.",
+      "evidence": ["data/companyx/documents/DOC-007.md:10", "data/companyx/documents/DOC-007.md:13", "data/companyx/documents/DOC-007.md:16"]
+    },
+    {
+      "question": "성능 최적화를 위한 DB 튜닝 방법 알려줘",
+      "relevantDocIds": ["DOC-014", "DOC-019"],
+      "rationale": "Both performance-tuning guides have a DB optimization section covering connection pools, indexes, and query caching.",
+      "evidence": ["data/companyx/documents/DOC-014.md:3", "data/companyx/documents/DOC-019.md:3"]
+    },
+    {
+      "question": "보안 취약점 점검 관련 내용이 있어?",
+      "relevantDocIds": ["DOC-021", "DOC-022", "DOC-024", "DOC-028", "DOC-029"],
+      "rationale": "These five meeting notes explicitly record security-vulnerability assessment findings and follow-up work.",
+      "evidence": ["data/companyx/documents/DOC-021.md:12", "data/companyx/documents/DOC-022.md:12", "data/companyx/documents/DOC-024.md:12", "data/companyx/documents/DOC-028.md:12", "data/companyx/documents/DOC-029.md:12"]
+    },
+    {
+      "question": "백업 정책은 어떻게 되어 있어?",
+      "relevantDocIds": ["DOC-013", "DOC-018"],
+      "rationale": "The two operations manuals explicitly state automated backup schedules, retention periods, and storage locations.",
+      "evidence": ["data/companyx/documents/DOC-013.md:8", "data/companyx/documents/DOC-018.md:8"]
+    },
+    {
+      "question": "API 인증 방식은 뭐야?",
+      "relevantDocIds": ["DOC-015", "DOC-020"],
+      "rationale": "The two API reference documents contain explicit authentication sections.",
+      "evidence": ["data/companyx/documents/DOC-015.md:5", "data/companyx/documents/DOC-020.md:5"]
+    },
+    {
+      "question": "고객사 미팅에서 논의된 일정 지연 이슈는?",
+      "relevantDocIds": ["DOC-021", "DOC-023", "DOC-025", "DOC-026", "DOC-027", "DOC-029", "DOC-030"],
+      "rationale": "These meeting notes explicitly mention delayed milestones/tests or an agreed schedule extension.",
+      "evidence": ["data/companyx/documents/DOC-021.md:15", "data/companyx/documents/DOC-023.md:12", "data/companyx/documents/DOC-025.md:12", "data/companyx/documents/DOC-026.md:15", "data/companyx/documents/DOC-027.md:12", "data/companyx/documents/DOC-029.md:15", "data/companyx/documents/DOC-030.md:18"]
+    },
+    {
+      "question": "클라우드 마이그레이션 제안서 내용 보여줘",
+      "relevantDocIds": ["DOC-031", "DOC-032"],
+      "rationale": "DOC-031 and DOC-032 are proposals whose solution descriptions explicitly concern cloud migration.",
+      "evidence": ["data/companyx/documents/DOC-031.md:12", "data/companyx/documents/DOC-032.md:12"]
+    },
+    {
+      "question": "SSL 인증서 관련 장애가 있었어?",
+      "relevantDocIds": ["DOC-005", "DOC-006"],
+      "rationale": "Both incident reports explicitly identify expired SSL certificates causing HTTPS communication failure.",
+      "evidence": ["data/companyx/documents/DOC-005.md:11", "data/companyx/documents/DOC-006.md:11"]
+    }
+  ]
+}

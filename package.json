@@ -1,0 +1,71 @@
+{
+  "name": "trustflow-mcp-data-agent",
+  "version": "0.3.0",
+  "description": "TrustFlow MCP data agent with a PolicyGraph gate for the Company-X contest dataset",
+  "type": "module",
+  "license": "Apache-2.0",
+  "files": [
+    ".env.example",
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "SECURITY.md",
+    "THIRD_PARTY_NOTICES.md",
+    "compose.yaml",
+    "db",
+    "docs",
+    "evaluation",
+    "policy",
+    "scripts",
+    "src",
+    "submission",
+    "test",
+    "tsconfig.json"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "setup:local": "node scripts/setup-local-env.ts",
+    "setup:upgrade": "node scripts/setup-local-env.ts --upgrade",
+    "fetch:data": "node scripts/fetch-companyx.ts",
+    "test": "node --test --test-reporter=spec test/*.test.ts",
+    "demo": "node --env-file-if-exists=.env scripts/demo.ts",
+    "dev:mcp": "node --env-file-if-exists=.env src/mcp/server.ts",
+    "dev:web": "node --env-file-if-exists=.env src/web/server.ts",
+    "typecheck": "tsc --noEmit",
+    "ingest": "node --env-file-if-exists=.env scripts/ingest-documents.ts",
+    "evaluate": "node --env-file-if-exists=.env scripts/evaluate.ts",
+    "evaluate:pgvector": "node --env-file-if-exists=.env scripts/evaluate-pgvector.ts",
+    "evaluate:ollama": "node --env-file-if-exists=.env scripts/evaluate-ollama.ts",
+    "evaluate:llm-security": "node --env-file-if-exists=.env scripts/evaluate-llm-security.ts",
+    "evaluate:llm-security:offline": "node --env-file-if-exists=.env scripts/evaluate-llm-security.ts --offline",
+    "smoke:postgres": "node --env-file-if-exists=.env scripts/smoke-postgres.ts",
+    "smoke:audit": "node --env-file-if-exists=.env scripts/smoke-audit.ts",
+    "smoke:ollama": "node --env-file-if-exists=.env scripts/smoke-ollama.ts",
+    "smoke:ollama:e2e": "node --env-file-if-exists=.env scripts/smoke-ollama-e2e.ts",
+    "smoke:ollama:e2e:offline": "node --env-file-if-exists=.env scripts/smoke-ollama-e2e.ts --offline",
+    "audit:verify": "node --env-file-if-exists=.env scripts/verify-audit.ts",
+    "compliance:sbom": "node scripts/generate-sbom.ts",
+    "compliance:licenses": "node scripts/check-licenses.ts",
+    "security:secrets": "node scripts/check-secrets.ts",
+    "package:source": "node scripts/build-source-bundle.ts",
+    "package:verify": "node scripts/verify-package.ts",
+    "submission:finalize": "node scripts/finalize-submission.ts",
+    "compliance": "npm run compliance:sbom && npm run compliance:licenses && npm run security:secrets && npm run package:verify && npm run package:source"
+  },
+  "dependencies": {
+    "@airmcp-dev/core": "^0.1.3",
+    "fflate": "0.8.3",
+    "pg": "^8.16.3",
+    "pgsql-ast-parser": "^12.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.5",
+    "typescript": "^5.9.2"
+  }
+}

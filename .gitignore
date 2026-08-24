@@ -1,0 +1,22 @@
+node_modules/
+dist/
+coverage/
+.env
+# Local agent/project-mirror material and legacy runtime state are not product source.
+AGENTS.md
+sources/
+.trustflow/
+.policygraph/
+.playwright-npx-cache/
+.playwright-cli/
+output/playwright/
+output/
+tmp/
+artifacts/submission/template_work/
+artifacts/submission/
+artifacts/package-smoke-*/
+
+# The official Company-X dataset is licensed for contest use only.
+# Keep local copies out of public repositories.
+data/raw/
+data/companyx/

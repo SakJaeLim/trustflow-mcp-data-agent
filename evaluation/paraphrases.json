@@ -1,0 +1,316 @@
+{
+  "schemaVersion": "1.0",
+  "description": "Three manually reviewed Korean paraphrases for each of the 30 official Company-X questions.",
+  "cases": [
+    {
+      "id": "sql-01",
+      "canonical": "서울 지역 매출 상위 5개 고객사를 알려줘",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["name", "total_sales"],
+      "paraphrases": [
+        "서울에 있는 거래처들 중 누적 판매액 기준 상위 다섯 곳을 금액과 함께 보여줘.",
+        "지역이 서울인 고객사를 매출 합계가 큰 순서로 5개만 뽑아줘.",
+        "서울권 고객 TOP 5를 총매출 순으로 정리해 줘."
+      ]
+    },
+    {
+      "id": "sql-02",
+      "canonical": "2025년 3분기 총 매출액은 얼마야?",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["total_sales"],
+      "paraphrases": [
+        "2025-Q3에 발생한 전체 매출 합계를 계산해 줘.",
+        "2025년 7월부터 9월까지 판매 금액을 모두 더하면 얼마야?",
+        "2025년도 세 번째 분기의 총매출을 집계해 줘."
+      ]
+    },
+    {
+      "id": "sql-03",
+      "canonical": "보안 솔루션 카테고리 제품들의 월 평균 매출은?",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["average_sale"],
+      "paraphrases": [
+        "security 분류 제품의 평균 판매 금액을 구해 줘.",
+        "보안 카테고리에 속한 솔루션 매출의 평균값은 얼마야?",
+        "보안 제품군의 월 매출을 평균 내서 알려줘."
+      ]
+    },
+    {
+      "id": "sql-04",
+      "canonical": "현재 활성 상태인 계약 수는 몇 개야?",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["active_contract_count"],
+      "paraphrases": [
+        "status가 active인 계약이 총 몇 건인지 세어 줘.",
+        "지금 유효하게 유지 중인 계약 건수를 알려줘.",
+        "활성 계약의 전체 개수를 집계해 줘."
+      ]
+    },
+    {
+      "id": "sql-05",
+      "canonical": "기술지원팀 직원 목록과 연봉을 알려줘",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["name", "salary"],
+      "paraphrases": [
+        "기술지원 부서 구성원의 이름과 급여를 조회해 줘.",
+        "기술지원팀에 소속된 사람별 연봉 목록이 필요해.",
+        "기술지원팀 직원명과 salary를 함께 보여줘."
+      ]
+    },
+    {
+      "id": "sql-06",
+      "canonical": "가장 많은 프로젝트를 진행 중인 고객사는?",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["name", "project_count"],
+      "paraphrases": [
+        "진행 상태 프로젝트를 제일 많이 보유한 고객 한 곳은 어디야?",
+        "in_progress 프로젝트 수가 최대인 고객사를 찾아줘.",
+        "현재 수행 중인 프로젝트 개수로 고객사를 순위 내서 1위만 알려줘."
+      ]
+    },
+    {
+      "id": "sql-07",
+      "canonical": "Critical 우선순위 티켓 중 아직 해결되지 않은 건은?",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["id", "status"],
+      "paraphrases": [
+        "심각도가 critical이고 아직 열려 있거나 처리 중인 지원 티켓을 찾아줘.",
+        "미해결 Critical 기술지원 이슈 목록을 최신순으로 보여줘.",
+        "priority가 critical인 open 또는 in_progress 티켓은 무엇이야?"
+      ]
+    },
+    {
+      "id": "sql-08",
+      "canonical": "제품별 총 계약 금액을 큰 순서로 보여줘",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["name", "total_contract_amount"],
+      "paraphrases": [
+        "각 제품의 계약액 합계를 계산해 높은 금액부터 정렬해 줘.",
+        "솔루션별 누적 계약 금액 순위를 보여줘.",
+        "제품 이름과 전체 계약 규모를 합계 내림차순으로 출력해 줘."
+      ]
+    },
+    {
+      "id": "sql-09",
+      "canonical": "2024년에 등록된 고객사는 몇 개야?",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["registered_client_count"],
+      "paraphrases": [
+        "등록일이 2024년인 고객의 수를 세어 줘.",
+        "2024-01-01부터 2024-12-31 사이 신규 고객사는 총 몇 곳이야?",
+        "2024년도에 가입한 거래처 개수를 알려줘."
+      ]
+    },
+    {
+      "id": "sql-10",
+      "canonical": "평균 연봉이 가장 높은 부서는 어디야?",
+      "expectedTool": "sql.query",
+      "requiredKeys": ["name"],
+      "paraphrases": [
+        "직원 급여 평균이 최대인 부서 한 곳을 찾아줘.",
+        "부서별 평균 salary를 비교해서 가장 높은 팀을 알려줘.",
+        "평균 급여 기준으로 1위인 조직은 어디야?"
+      ]
+    },
+    {
+      "id": "vector-01",
+      "canonical": "최근 서버 장애 사례와 원인을 알려줘",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "가장 최근에 발생한 서비스 장애 보고서와 근본 원인을 찾아줘.",
+        "최신 시스템 사고 사례에서 무엇 때문에 문제가 났는지 알려줘.",
+        "최근 장애 기록의 발생 내용과 원인 분석을 보여줘."
+      ]
+    },
+    {
+      "id": "vector-02",
+      "canonical": "Product-C1 설치 방법이 궁금해",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "Product-C1을 설치하려면 어떤 절차를 따라야 하나요?",
+        "C1 제품 배포 가이드에서 설치 순서를 찾아줘.",
+        "Product-C1 셋업에 필요한 요구사항과 설치 단계를 알려줘."
+      ]
+    },
+    {
+      "id": "vector-03",
+      "canonical": "Kubernetes 관련 장애 대응 방법은?",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "K8s Pod 문제로 장애가 났을 때 어떤 조치를 했는지 찾아줘.",
+        "쿠버네티스 컨테이너 장애의 원인과 복구 방법을 알려줘.",
+        "Kubernetes OOM 사고 대응 기록이 있으면 보여줘."
+      ]
+    },
+    {
+      "id": "vector-04",
+      "canonical": "성능 최적화를 위한 DB 튜닝 방법 알려줘",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "데이터베이스 성능을 높이는 설정 지침을 문서에서 찾아줘.",
+        "Connection Pool과 인덱스, 쿼리 캐시 튜닝 권장사항은?",
+        "DB 최적화 가이드에 나온 튜닝 항목을 알려줘."
+      ]
+    },
+    {
+      "id": "vector-05",
+      "canonical": "보안 취약점 점검 관련 내용이 있어?",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "문서에서 보안 취약성 검사 결과를 찾아줘.",
+        "고객 회의록에 vulnerability 점검과 후속조치가 기록돼 있어?",
+        "보안 진단으로 발견된 개선 사항을 확인해 줘."
+      ]
+    },
+    {
+      "id": "vector-06",
+      "canonical": "백업 정책은 어떻게 되어 있어?",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "운영 문서에 정의된 백업 주기와 보관 기간을 알려줘.",
+        "자동 백업은 언제 실행되고 어디에 저장돼?",
+        "서비스 데이터 백업 규칙을 매뉴얼에서 찾아줘."
+      ]
+    },
+    {
+      "id": "vector-07",
+      "canonical": "API 인증 방식은 뭐야?",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "API 호출 때 사용하는 인증 메커니즘을 레퍼런스에서 찾아줘.",
+        "인터페이스 접근 권한은 어떤 방식으로 확인해?",
+        "API 문서의 authentication 절을 보여줘."
+      ]
+    },
+    {
+      "id": "vector-08",
+      "canonical": "고객사 미팅에서 논의된 일정 지연 이슈는?",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "고객 회의록에서 납기나 마일스톤이 늦어진 사례를 찾아줘.",
+        "미팅 중 프로젝트 일정 연장을 논의한 내용이 있어?",
+        "고객사 회의에서 언급된 테스트 지연과 일정 조정 사항을 보여줘."
+      ]
+    },
+    {
+      "id": "vector-09",
+      "canonical": "클라우드 마이그레이션 제안서 내용 보여줘",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "클라우드 이전 솔루션을 제안한 문서의 핵심 내용을 찾아줘.",
+        "멀티클라우드 마이그레이션 도입 제안에는 무엇이 들어 있어?",
+        "고객 대상 cloud migration 제안서와 구축 계획을 보여줘."
+      ]
+    },
+    {
+      "id": "vector-10",
+      "canonical": "SSL 인증서 관련 장애가 있었어?",
+      "expectedTool": "vector.search",
+      "paraphrases": [
+        "인증서 만료 때문에 HTTPS 통신이 실패한 사고를 찾아줘.",
+        "SSL certificate 문제로 발생한 장애 보고서가 있나?",
+        "TLS 인증서와 연관된 서비스 오류 사례를 보여줘."
+      ]
+    },
+    {
+      "id": "graph-01",
+      "canonical": "Client-A가 사용 중인 제품 목록은?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "Client-A와 사용 제품 사이의 관계를 따라가서 제품명을 알려줘.",
+        "고객 Client-A가 연결된 솔루션 노드는 무엇이야?",
+        "Client-A에서 USES 관계로 이어지는 제품 목록을 찾아줘."
+      ]
+    },
+    {
+      "id": "graph-02",
+      "canonical": "Product-C1을 사용하는 고객사는 어디야?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "USES 관계를 역방향으로 따라 Product-C1 고객을 찾아줘.",
+        "어떤 고객 노드들이 Product-C1에 연결되어 있어?",
+        "C1 제품을 도입한 고객사 목록을 관계 그래프에서 보여줘."
+      ]
+    },
+    {
+      "id": "graph-03",
+      "canonical": "클라우드사업부 소속 직원들은 누구야?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "BELONGS_TO 관계로 클라우드사업부에 연결된 직원들을 찾아줘.",
+        "클라우드사업부 노드에 소속된 구성원은 누구야?",
+        "조직 그래프에서 클라우드사업부 직원 명단을 보여줘."
+      ]
+    },
+    {
+      "id": "graph-04",
+      "canonical": "서울물산 담당 엔지니어는 누구야?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "서울물산 고객 계정을 관리하는 직원 관계를 찾아줘.",
+        "MANAGES_ACCOUNT로 서울물산에 연결된 엔지니어는 누구야?",
+        "관계 그래프상 서울물산 담당자는 누구인지 알려줘."
+      ]
+    },
+    {
+      "id": "graph-05",
+      "canonical": "Product-D1 제품과 관련된 프로젝트는?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "Product-D1을 쓰는 고객을 거쳐 연결된 프로젝트를 찾아줘.",
+        "D1 제품에서 고객, 프로젝트로 이어지는 2홉 관계를 보여줘.",
+        "Product-D1과 연관된 프로젝트 노드 목록은?"
+      ]
+    },
+    {
+      "id": "graph-06",
+      "canonical": "기술 지원 이슈가 가장 많은 제품은?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "REPORTED_ISSUE 연결 수가 최대인 제품을 집계해 줘.",
+        "고객 이슈 관계를 가장 많이 받은 제품 노드는 무엇이야?",
+        "지원 문제 건수 기준으로 제품 그래프 1위를 알려줘."
+      ]
+    },
+    {
+      "id": "graph-07",
+      "canonical": "경영지원팀 팀장은 누구야?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "경영지원팀에서 HEAD_IS 관계가 가리키는 직원은 누구야?",
+        "조직 그래프상 경영지원팀의 부서장을 찾아줘.",
+        "경영지원팀 노드와 팀장으로 연결된 사람을 알려줘."
+      ]
+    },
+    {
+      "id": "graph-08",
+      "canonical": "진행 중인 프로젝트를 이끄는 직원 목록",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "status가 in_progress인 프로젝트에 LEADS로 연결된 직원을 찾아줘.",
+        "현재 진행 프로젝트를 리드하는 구성원들은 누구야?",
+        "진행 중 프로젝트 노드에서 담당 직원 관계를 역추적해 줘."
+      ]
+    },
+    {
+      "id": "graph-09",
+      "canonical": "Product-S1 관련 고객 이슈 현황은?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "Product-S1에 REPORTED_ISSUE로 연결된 고객을 보여줘.",
+        "어떤 고객들이 S1 제품 문제를 보고했는지 관계를 찾아줘.",
+        "S1 솔루션의 고객 이슈 연결 현황을 알려줘."
+      ]
+    },
+    {
+      "id": "graph-10",
+      "canonical": "가장 많은 고객을 담당하는 직원은?",
+      "expectedTool": "graph.traverse",
+      "paraphrases": [
+        "MANAGES_ACCOUNT 관계 수가 가장 큰 직원을 집계해 줘.",
+        "담당 고객 노드를 제일 많이 가진 직원은 누구야?",
+        "고객 관리 연결 개수로 직원 순위를 내서 1위를 보여줘."
+      ]
+    }
+  ]
+}

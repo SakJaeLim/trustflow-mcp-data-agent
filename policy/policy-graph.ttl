@@ -1,0 +1,33 @@
+@prefix pg: <https://policygraph.dev/companyx/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+pg:CompanyXPolicyGraph a prov:Entity ;
+  pg:version "1.0" ;
+  pg:governs pg:QueryPlan, pg:SqlQuery, pg:VectorSearch, pg:GraphTraversal .
+
+pg:ReadOnlySqlShape a sh:NodeShape ;
+  sh:targetClass pg:SqlQuery ;
+  pg:policyId "POL-SQL-001" ;
+  pg:constraint "single SELECT statement" .
+
+pg:SqlRowBudgetShape a sh:NodeShape ;
+  sh:targetClass pg:SqlQuery ;
+  pg:policyId "POL-SQL-004" ;
+  pg:maxRows 100 .
+
+pg:VectorBudgetShape a sh:NodeShape ;
+  sh:targetClass pg:VectorSearch ;
+  pg:policyId "POL-VEC-001" ;
+  pg:maxResults 10 .
+
+pg:GraphBudgetShape a sh:NodeShape ;
+  sh:targetClass pg:GraphTraversal ;
+  pg:policyId "POL-GRAPH-002" ;
+  pg:maxHops 2 ;
+  pg:maxNodes 50 .
+
+pg:AuditShape a sh:NodeShape ;
+  sh:targetClass pg:ToolCall ;
+  pg:policyId "POL-AUDIT-001" ;
+  pg:requires pg:planHash, pg:evidenceId, pg:recordHash .

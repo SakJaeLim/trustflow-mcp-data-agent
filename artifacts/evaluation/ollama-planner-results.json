@@ -1,0 +1,1262 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-08-24T03:17:20.776Z",
+  "model": "gemma4:e2b",
+  "runtime": "postgres+pgvector+ollama-cpu",
+  "fixtureCaseCount": 30,
+  "fixtureParaphraseCount": 90,
+  "variantMode": "first",
+  "metrics": {
+    "evaluatedCount": 30,
+    "planSchemaSuccessRate": 1,
+    "rawToolAccuracy": 0.9333,
+    "toolAccuracy": 1,
+    "policyAcceptanceRate": 1,
+    "executionSuccessRate": 1,
+    "semanticCorrectRate": 1,
+    "meanLatencyMs": 26430.1,
+    "p50LatencyMs": 22818.2,
+    "p95LatencyMs": 41008.16
+  },
+  "results": [
+    {
+      "id": "sql-01",
+      "variant": 1,
+      "canonical": "서울 지역 매출 상위 5개 고객사를 알려줘",
+      "question": "서울에 있는 거래처들 중 누적 판매액 기준 상위 다섯 곳을 금액과 함께 보여줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "서울 지역 매출 상위 5개 고객사를 알려줘",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "서울에 있는 거래처들 중 누적 판매액 기준 상위 다섯 곳을 금액과 함께 보여줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT c.name, SUM(s.amount) AS total_sales FROM sales s JOIN clients c ON c.id = s.client_id WHERE s.region = '서울' GROUP BY c.id, c.name ORDER BY total_sales DESC LIMIT 5",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 122450.53
+    },
+    {
+      "id": "sql-02",
+      "variant": 1,
+      "canonical": "2025년 3분기 총 매출액은 얼마야?",
+      "question": "2025-Q3에 발생한 전체 매출 합계를 계산해 줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "2025년 3분기 총 매출액은 얼마야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "2025-Q3에 발생한 전체 매출 합계를 계산해 줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT SUM(amount) AS total_sales FROM sales WHERE quarter = '2025-Q3'",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "REPAIR",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 15873.41
+    },
+    {
+      "id": "sql-03",
+      "variant": 1,
+      "canonical": "보안 솔루션 카테고리 제품들의 월 평균 매출은?",
+      "question": "security 분류 제품의 평균 판매 금액을 구해 줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "보안 솔루션 카테고리 제품들의 월 평균 매출은?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "security 분류 제품의 평균 판매 금액을 구해 줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT AVG(amount) AS average_sale FROM sales WHERE category = 'security'",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "REPAIR",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 22818.2
+    },
+    {
+      "id": "sql-04",
+      "variant": 1,
+      "canonical": "현재 활성 상태인 계약 수는 몇 개야?",
+      "question": "status가 active인 계약이 총 몇 건인지 세어 줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "현재 활성 상태인 계약 수는 몇 개야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "status가 active인 계약이 총 몇 건인지 세어 줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT COUNT(*) AS active_contract_count FROM contracts WHERE status = 'active'",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "REPAIR",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 28948.06
+    },
+    {
+      "id": "sql-05",
+      "variant": 1,
+      "canonical": "기술지원팀 직원 목록과 연봉을 알려줘",
+      "question": "기술지원 부서 구성원의 이름과 급여를 조회해 줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "기술지원팀 직원 목록과 연봉을 알려줘",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "기술지원 부서 구성원의 이름과 급여를 조회해 줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT e.name, e.position, e.salary FROM employees e JOIN departments d ON d.id = e.dept_id WHERE d.name = '기술지원팀' ORDER BY e.name",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "APPROVAL_REQUIRED",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 41008.16
+    },
+    {
+      "id": "sql-06",
+      "variant": 1,
+      "canonical": "가장 많은 프로젝트를 진행 중인 고객사는?",
+      "question": "진행 상태 프로젝트를 제일 많이 보유한 고객 한 곳은 어디야?",
+      "expectedTool": "sql.query",
+      "draftTool": "graph.traverse",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "가장 많은 프로젝트를 진행 중인 고객사는?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "진행 상태 프로젝트를 제일 많이 보유한 고객 한 곳은 어디야?",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT c.name, COUNT(*) AS project_count FROM projects p JOIN clients c ON c.id = p.client_id WHERE p.status = 'in_progress' GROUP BY c.id, c.name ORDER BY project_count DESC LIMIT 1",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 21821.53
+    },
+    {
+      "id": "sql-07",
+      "variant": 1,
+      "canonical": "Critical 우선순위 티켓 중 아직 해결되지 않은 건은?",
+      "question": "심각도가 critical이고 아직 열려 있거나 처리 중인 지원 티켓을 찾아줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "Critical 우선순위 티켓 중 아직 해결되지 않은 건은?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "심각도가 critical이고 아직 열려 있거나 처리 중인 지원 티켓을 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT id, title, status, created_at FROM support_tickets WHERE priority = 'critical' AND status IN ('open', 'in_progress') ORDER BY created_at DESC",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "REPAIR",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 23159.46
+    },
+    {
+      "id": "sql-08",
+      "variant": 1,
+      "canonical": "제품별 총 계약 금액을 큰 순서로 보여줘",
+      "question": "각 제품의 계약액 합계를 계산해 높은 금액부터 정렬해 줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "제품별 총 계약 금액을 큰 순서로 보여줘",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "각 제품의 계약액 합계를 계산해 높은 금액부터 정렬해 줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT p.name, SUM(c.amount) AS total_contract_amount FROM contracts c JOIN products p ON p.id = c.product_id GROUP BY p.id, p.name ORDER BY total_contract_amount DESC",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "REPAIR",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 32768.62
+    },
+    {
+      "id": "sql-09",
+      "variant": 1,
+      "canonical": "2024년에 등록된 고객사는 몇 개야?",
+      "question": "등록일이 2024년인 고객의 수를 세어 줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "2024년에 등록된 고객사는 몇 개야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "등록일이 2024년인 고객의 수를 세어 줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT COUNT(*) AS registered_client_count FROM clients WHERE registered_at >= '2024-01-01' AND registered_at < '2025-01-01'",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "REPAIR",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 19833.06
+    },
+    {
+      "id": "sql-10",
+      "variant": 1,
+      "canonical": "평균 연봉이 가장 높은 부서는 어디야?",
+      "question": "직원 급여 평균이 최대인 부서 한 곳을 찾아줘.",
+      "expectedTool": "sql.query",
+      "draftTool": "sql.query",
+      "actualTool": "sql.query",
+      "normalization": "intent-repair",
+      "canonicalMatch": "평균 연봉이 가장 높은 부서는 어디야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "직원 급여 평균이 최대인 부서 한 곳을 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "sql.query",
+            "rationale": "집계·정렬·필터가 필요한 정형 데이터 질문입니다.",
+            "input": {
+              "sql": "SELECT d.name, AVG(e.salary) AS average_salary FROM employees e JOIN departments d ON d.id = e.dept_id GROUP BY d.id, d.name ORDER BY average_salary DESC LIMIT 1",
+              "maxRows": 100
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "APPROVAL_REQUIRED",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 33071.41
+    },
+    {
+      "id": "vector-01",
+      "variant": 1,
+      "canonical": "최근 서버 장애 사례와 원인을 알려줘",
+      "question": "가장 최근에 발생한 서비스 장애 보고서와 근본 원인을 찾아줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "최근 서버 장애 사례와 원인을 알려줘",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "가장 최근에 발생한 서비스 장애 보고서와 근본 원인을 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "가장 최근에 발생한 서비스 장애 보고서와 근본 원인을 찾아줘.",
+              "topK": 5,
+              "documentType": "incident_report"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 23833.58
+    },
+    {
+      "id": "vector-02",
+      "variant": 1,
+      "canonical": "Product-C1 설치 방법이 궁금해",
+      "question": "Product-C1을 설치하려면 어떤 절차를 따라야 하나요?",
+      "expectedTool": "vector.search",
+      "draftTool": "graph.traverse",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "Product-C1 설치 방법이 궁금해",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "Product-C1을 설치하려면 어떤 절차를 따라야 하나요?",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "Product-C1을 설치하려면 어떤 절차를 따라야 하나요?",
+              "topK": 5,
+              "documentType": "technical_doc"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 23793.79
+    },
+    {
+      "id": "vector-03",
+      "variant": 1,
+      "canonical": "Kubernetes 관련 장애 대응 방법은?",
+      "question": "K8s Pod 문제로 장애가 났을 때 어떤 조치를 했는지 찾아줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "Kubernetes 관련 장애 대응 방법은?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "K8s Pod 문제로 장애가 났을 때 어떤 조치를 했는지 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "K8s Pod 문제로 장애가 났을 때 어떤 조치를 했는지 찾아줘.",
+              "topK": 5,
+              "documentType": "incident_report"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 24201.78
+    },
+    {
+      "id": "vector-04",
+      "variant": 1,
+      "canonical": "성능 최적화를 위한 DB 튜닝 방법 알려줘",
+      "question": "데이터베이스 성능을 높이는 설정 지침을 문서에서 찾아줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "성능 최적화를 위한 DB 튜닝 방법 알려줘",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "데이터베이스 성능을 높이는 설정 지침을 문서에서 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "데이터베이스 성능을 높이는 설정 지침을 문서에서 찾아줘.",
+              "topK": 5,
+              "documentType": "technical_doc"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 16304.71
+    },
+    {
+      "id": "vector-05",
+      "variant": 1,
+      "canonical": "보안 취약점 점검 관련 내용이 있어?",
+      "question": "문서에서 보안 취약성 검사 결과를 찾아줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "보안 취약점 점검 관련 내용이 있어?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "문서에서 보안 취약성 검사 결과를 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "문서에서 보안 취약성 검사 결과를 찾아줘.",
+              "topK": 5
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 19044.03
+    },
+    {
+      "id": "vector-06",
+      "variant": 1,
+      "canonical": "백업 정책은 어떻게 되어 있어?",
+      "question": "운영 문서에 정의된 백업 주기와 보관 기간을 알려줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "백업 정책은 어떻게 되어 있어?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "운영 문서에 정의된 백업 주기와 보관 기간을 알려줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "운영 문서에 정의된 백업 주기와 보관 기간을 알려줘.",
+              "topK": 5,
+              "documentType": "technical_doc"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 22859.6
+    },
+    {
+      "id": "vector-07",
+      "variant": 1,
+      "canonical": "API 인증 방식은 뭐야?",
+      "question": "API 호출 때 사용하는 인증 메커니즘을 레퍼런스에서 찾아줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "API 인증 방식은 뭐야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "API 호출 때 사용하는 인증 메커니즘을 레퍼런스에서 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "API 호출 때 사용하는 인증 메커니즘을 레퍼런스에서 찾아줘.",
+              "topK": 5,
+              "documentType": "technical_doc"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 16106.3
+    },
+    {
+      "id": "vector-08",
+      "variant": 1,
+      "canonical": "고객사 미팅에서 논의된 일정 지연 이슈는?",
+      "question": "고객 회의록에서 납기나 마일스톤이 늦어진 사례를 찾아줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "고객사 미팅에서 논의된 일정 지연 이슈는?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "고객 회의록에서 납기나 마일스톤이 늦어진 사례를 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "고객 회의록에서 납기나 마일스톤이 늦어진 사례를 찾아줘.",
+              "topK": 5,
+              "documentType": "meeting_note"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 27990.88
+    },
+    {
+      "id": "vector-09",
+      "variant": 1,
+      "canonical": "클라우드 마이그레이션 제안서 내용 보여줘",
+      "question": "클라우드 이전 솔루션을 제안한 문서의 핵심 내용을 찾아줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "클라우드 마이그레이션 제안서 내용 보여줘",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "클라우드 이전 솔루션을 제안한 문서의 핵심 내용을 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "클라우드 이전 솔루션을 제안한 문서의 핵심 내용을 찾아줘.",
+              "topK": 5,
+              "documentType": "proposal"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 19447.15
+    },
+    {
+      "id": "vector-10",
+      "variant": 1,
+      "canonical": "SSL 인증서 관련 장애가 있었어?",
+      "question": "인증서 만료 때문에 HTTPS 통신이 실패한 사고를 찾아줘.",
+      "expectedTool": "vector.search",
+      "draftTool": "vector.search",
+      "actualTool": "vector.search",
+      "normalization": "intent-repair",
+      "canonicalMatch": "SSL 인증서 관련 장애가 있었어?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "인증서 만료 때문에 HTTPS 통신이 실패한 사고를 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "vector.search",
+            "rationale": "문서 본문에서 의미상 관련된 근거를 찾아야 하는 질문입니다.",
+            "input": {
+              "query": "인증서 만료 때문에 HTTPS 통신이 실패한 사고를 찾아줘.",
+              "topK": 5,
+              "documentType": "incident_report"
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 21783.14
+    },
+    {
+      "id": "graph-01",
+      "variant": 1,
+      "canonical": "Client-A가 사용 중인 제품 목록은?",
+      "question": "Client-A와 사용 제품 사이의 관계를 따라가서 제품명을 알려줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "Client-A가 사용 중인 제품 목록은?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "Client-A와 사용 제품 사이의 관계를 따라가서 제품명을 알려줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "startName": "Client-A",
+              "path": [
+                {
+                  "relation": "USES",
+                  "direction": "out"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 20
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 26321.22
+    },
+    {
+      "id": "graph-02",
+      "variant": 1,
+      "canonical": "Product-C1을 사용하는 고객사는 어디야?",
+      "question": "USES 관계를 역방향으로 따라 Product-C1 고객을 찾아줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "Product-C1을 사용하는 고객사는 어디야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "USES 관계를 역방향으로 따라 Product-C1 고객을 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "startName": "Product-C1",
+              "path": [
+                {
+                  "relation": "USES",
+                  "direction": "in"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 20
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 22044.71
+    },
+    {
+      "id": "graph-03",
+      "variant": 1,
+      "canonical": "클라우드사업부 소속 직원들은 누구야?",
+      "question": "BELONGS_TO 관계로 클라우드사업부에 연결된 직원들을 찾아줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "클라우드사업부 소속 직원들은 누구야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "BELONGS_TO 관계로 클라우드사업부에 연결된 직원들을 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "startName": "클라우드사업부",
+              "path": [
+                {
+                  "relation": "BELONGS_TO",
+                  "direction": "in"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 30
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 23208.38
+    },
+    {
+      "id": "graph-04",
+      "variant": 1,
+      "canonical": "서울물산 담당 엔지니어는 누구야?",
+      "question": "서울물산 고객 계정을 관리하는 직원 관계를 찾아줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "서울물산 담당 엔지니어는 누구야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "서울물산 고객 계정을 관리하는 직원 관계를 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "startName": "client_2",
+              "path": [
+                {
+                  "relation": "MANAGES_ACCOUNT",
+                  "direction": "in"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 20
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 20947.38
+    },
+    {
+      "id": "graph-05",
+      "variant": 1,
+      "canonical": "Product-D1 제품과 관련된 프로젝트는?",
+      "question": "Product-D1을 쓰는 고객을 거쳐 연결된 프로젝트를 찾아줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "Product-D1 제품과 관련된 프로젝트는?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "Product-D1을 쓰는 고객을 거쳐 연결된 프로젝트를 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "startName": "Product-D1",
+              "path": [
+                {
+                  "relation": "USES",
+                  "direction": "in"
+                },
+                {
+                  "relation": "HAS_PROJECT",
+                  "direction": "out"
+                }
+              ],
+              "maxHops": 2,
+              "maxNodes": 30
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 21123.93
+    },
+    {
+      "id": "graph-06",
+      "variant": 1,
+      "canonical": "기술 지원 이슈가 가장 많은 제품은?",
+      "question": "REPORTED_ISSUE 연결 수가 최대인 제품을 집계해 줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "기술 지원 이슈가 가장 많은 제품은?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "REPORTED_ISSUE 연결 수가 최대인 제품을 집계해 줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "mode": "rank",
+              "startType": "product",
+              "path": [
+                {
+                  "relation": "REPORTED_ISSUE",
+                  "direction": "in"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 1
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 23694.72
+    },
+    {
+      "id": "graph-07",
+      "variant": 1,
+      "canonical": "경영지원팀 팀장은 누구야?",
+      "question": "경영지원팀에서 HEAD_IS 관계가 가리키는 직원은 누구야?",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "경영지원팀 팀장은 누구야?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "경영지원팀에서 HEAD_IS 관계가 가리키는 직원은 누구야?",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "startName": "경영지원팀",
+              "path": [
+                {
+                  "relation": "HEAD_IS",
+                  "direction": "out"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 10
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 18583.63
+    },
+    {
+      "id": "graph-08",
+      "variant": 1,
+      "canonical": "진행 중인 프로젝트를 이끄는 직원 목록",
+      "question": "status가 in_progress인 프로젝트에 LEADS로 연결된 직원을 찾아줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "진행 중인 프로젝트를 이끄는 직원 목록",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "status가 in_progress인 프로젝트에 LEADS로 연결된 직원을 찾아줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "startType": "project",
+              "startWhere": {
+                "status": "in_progress"
+              },
+              "path": [
+                {
+                  "relation": "LEADS",
+                  "direction": "in"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 50
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 21625
+    },
+    {
+      "id": "graph-09",
+      "variant": 1,
+      "canonical": "Product-S1 관련 고객 이슈 현황은?",
+      "question": "Product-S1에 REPORTED_ISSUE로 연결된 고객을 보여줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "Product-S1 관련 고객 이슈 현황은?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "Product-S1에 REPORTED_ISSUE로 연결된 고객을 보여줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "startName": "Product-S1",
+              "path": [
+                {
+                  "relation": "REPORTED_ISSUE",
+                  "direction": "in"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 30
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 23488.86
+    },
+    {
+      "id": "graph-10",
+      "variant": 1,
+      "canonical": "가장 많은 고객을 담당하는 직원은?",
+      "question": "MANAGES_ACCOUNT 관계 수가 가장 큰 직원을 집계해 줘.",
+      "expectedTool": "graph.traverse",
+      "draftTool": "graph.traverse",
+      "actualTool": "graph.traverse",
+      "normalization": "intent-repair",
+      "canonicalMatch": "가장 많은 고객을 담당하는 직원은?",
+      "plan": {
+        "planVersion": "1.0",
+        "query": "MANAGES_ACCOUNT 관계 수가 가장 큰 직원을 집계해 줘.",
+        "actor": {
+          "id": "ollama-evaluation",
+          "role": "analyst"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "graph.traverse",
+            "rationale": "개체 간 방향성 관계를 탐색해야 하는 질문입니다.",
+            "input": {
+              "mode": "rank",
+              "startType": "employee",
+              "path": [
+                {
+                  "relation": "MANAGES_ACCOUNT",
+                  "direction": "out"
+                }
+              ],
+              "maxHops": 1,
+              "maxNodes": 1
+            }
+          }
+        ]
+      },
+      "planValid": true,
+      "toolCorrect": true,
+      "policyDecision": "ALLOW",
+      "status": "executed",
+      "semanticCorrect": true,
+      "latencyMs": 14747.87
+    }
+  ],
+  "answerSamples": [
+    {
+      "id": "sql-02",
+      "question": "2025년 3분기 총 매출액은 얼마야?",
+      "generator": "ollama",
+      "verified": true,
+      "citationIntegrity": true,
+      "latencyMs": 12450.42,
+      "text": "2025년 3분기 총 매출액은 23859이다.",
+      "claims": [
+        {
+          "claimId": "llm_claim_1",
+          "text": "2025년 3분기 총 매출액은 23859이다.",
+          "evidenceIds": [
+            "ev_1fe667ec83fb64aa58e3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vector-02",
+      "question": "Product-C1 설치 방법이 궁금해",
+      "generator": "deterministic",
+      "verified": true,
+      "citationIntegrity": true,
+      "latencyMs": 71376.65,
+      "text": "[기술문서] Product-C1 설치 가이드\nProduct-C1 설치 가이드\n시스템 요구사항\n- OS: Ubuntu 22.04+ / RHEL 8+\n- RAM: 최소 5GB\n- CPU: 2코어 이상\n- 디스크: 146GB SSD\n설치 절차\n1단계: 의존성 설치\nDocker와 Docker Compose가 필요합니다. Kubernetes 환경에서는 Helm 차트를 통해 배포할 수 있습니다.\n2단계: 설정 파일 준비\n환경 변수 파일(.env)에 데이터베이스 접속 정보, API…\n\n[기술문서] Product-D2 설치 가이드\nProduct-D2 설치 가이드\n시스템 요구사항\n- OS: Ubuntu 22.04+ / RHEL 8+\n- RAM: 최소 8GB\n- CPU: 3코어 이상\n- 디스크: 167GB SSD\n설치 절차\n1단계: 의존성 설치\nDocker와 Docker Compose가 필요합니다. Kubernetes 환경에서는 Helm 차트를 통해 배포할 수 있습니다.\n2단계: 설정 파일 준비\n환경 변수 파일(.env)에 데이터베이스 접속 정보, API…",
+      "claims": [
+        {
+          "claimId": "claim_b3acb34cb649",
+          "text": "[기술문서] Product-C1 설치 가이드\nProduct-C1 설치 가이드\n시스템 요구사항\n- OS: Ubuntu 22.04+ / RHEL 8+\n- RAM: 최소 5GB\n- CPU: 2코어 이상\n- 디스크: 146GB SSD\n설치 절차\n1단계: 의존성 설치\nDocker와 Docker Compose가 필요합니다. Kubernetes 환경에서는 Helm 차트를 통해 배포할 수 있습니다.\n2단계: 설정 파일 준비\n환경 변수 파일(.env)에 데이터베이스 접속 정보, API…",
+          "evidenceIds": [
+            "ev_9fdf04134c99775932fc"
+          ]
+        },
+        {
+          "claimId": "claim_3dbda614054f",
+          "text": "[기술문서] Product-D2 설치 가이드\nProduct-D2 설치 가이드\n시스템 요구사항\n- OS: Ubuntu 22.04+ / RHEL 8+\n- RAM: 최소 8GB\n- CPU: 3코어 이상\n- 디스크: 167GB SSD\n설치 절차\n1단계: 의존성 설치\nDocker와 Docker Compose가 필요합니다. Kubernetes 환경에서는 Helm 차트를 통해 배포할 수 있습니다.\n2단계: 설정 파일 준비\n환경 변수 파일(.env)에 데이터베이스 접속 정보, API…",
+          "evidenceIds": [
+            "ev_6913058577f513add915"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "graph-01",
+      "question": "Client-A가 사용 중인 제품 목록은?",
+      "generator": "ollama",
+      "verified": true,
+      "citationIntegrity": true,
+      "latencyMs": 23615.44,
+      "text": "Product-C3\n\nProduct-S1",
+      "claims": [
+        {
+          "claimId": "llm_claim_1",
+          "text": "Product-C3",
+          "evidenceIds": [
+            "ev_47119ae454b3c46fbc15"
+          ]
+        },
+        {
+          "claimId": "llm_claim_2",
+          "text": "Product-S1",
+          "evidenceIds": [
+            "ev_47119ae454b3c46fbc15"
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": "Manually labeled public-fixture paraphrases; not a hidden-test or production benchmark."
+}
