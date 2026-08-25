@@ -7,7 +7,7 @@
 - 팀명: corevalue
 - 접수번호: `555`
 - 공개 저장소: `https://github.com/SakJaeLim/trustflow-mcp-data-agent`
-- 3분 시연영상: `[YouTube URL 입력 필요]`
+- 3분 시연영상: `https://youtu.be/NwcPxp_jDFE`
 
 ## 한 문장 요약
 
