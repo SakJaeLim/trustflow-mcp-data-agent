@@ -1,9 +1,13 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { resolve } from "node:path";
 import { OllamaEmbedder } from "../src/adapters/ollama-embedder.ts";
 import { PgVectorDocumentSearch } from "../src/adapters/pgvector-search.ts";
 import { PostgresDatabase } from "../src/adapters/postgres.ts";
+import { sha256Hex, verifyCompanyXDataDirectory } from "../src/core/companyx-integrity.ts";
+import { loadVerifiedDocumentCorpus } from "../src/core/document-corpus.ts";
+import { loadEmbeddingAttestation, verifyPostgresCompanyX } from "../src/core/postgres-integrity.ts";
+import { readRegularFileBounded } from "../src/core/safe-file.ts";
 
 interface RelevanceQuestion {
   question: string;
@@ -17,6 +21,45 @@ interface RelevanceFixture {
   labelingMethod: string;
   limitations: string;
   questions: RelevanceQuestion[];
+}
+
+function relevanceFixture(value: unknown, documentIds: ReadonlySet<string>): RelevanceFixture {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Vector relevance fixture must be an object.");
+  const item = value as Record<string, unknown>;
+  if (item.schemaVersion !== "1.0"
+    || typeof item.labelingMethod !== "string"
+    || typeof item.limitations !== "string"
+    || !Array.isArray(item.questions)
+    || item.questions.length !== 10) {
+    throw new Error("Vector relevance fixture failed top-level schema or cardinality validation.");
+  }
+  const seen = new Set<string>();
+  const questions = item.questions.map((raw, index): RelevanceQuestion => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(`Vector relevance question ${index + 1} is invalid.`);
+    const question = raw as Record<string, unknown>;
+    if (typeof question.question !== "string"
+      || Buffer.byteLength(question.question, "utf8") === 0
+      || Buffer.byteLength(question.question, "utf8") > 4_096
+      || seen.has(question.question)
+      || typeof question.rationale !== "string"
+      || !Array.isArray(question.relevantDocIds)
+      || question.relevantDocIds.length === 0
+      || question.relevantDocIds.some((id) => typeof id !== "string" || !documentIds.has(id))
+      || new Set(question.relevantDocIds).size !== question.relevantDocIds.length
+      || !Array.isArray(question.evidence)
+      || question.evidence.length === 0
+      || question.evidence.some((evidence) => typeof evidence !== "string" || Buffer.byteLength(evidence, "utf8") > 8_192)) {
+      throw new Error(`Vector relevance question ${index + 1} failed schema, bounds, or provenance validation.`);
+    }
+    seen.add(question.question);
+    return {
+      question: question.question,
+      relevantDocIds: [...question.relevantDocIds] as string[],
+      rationale: question.rationale,
+      evidence: [...question.evidence] as string[],
+    };
+  });
+  return { schemaVersion: "1.0", labelingMethod: item.labelingMethod, limitations: item.limitations, questions };
 }
 
 function percentile(values: number[], fraction: number): number {
@@ -36,24 +79,56 @@ function mean(values: number[]): number {
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is required. Run npm run setup:local first.");
 
-const fixture = JSON.parse(
-  await readFile(resolve("evaluation/vector-relevance.json"), "utf8"),
-) as RelevanceFixture;
 const outputDirectory = resolve("artifacts/evaluation");
 await mkdir(outputDirectory, { recursive: true });
 
 const database = new PostgresDatabase(connectionString, 30_000);
+const integrity = await verifyCompanyXDataDirectory(
+  resolve(process.env.COMPANYX_DATA_DIR ?? "data/companyx"),
+  process.env.COMPANYX_ARCHIVE_PATH,
+);
+const verifiedCorpus = loadVerifiedDocumentCorpus(integrity);
+const fixtureFile = await readRegularFileBounded(resolve("evaluation/vector-relevance.json"), 1_048_576);
+const fixtureSha256 = sha256Hex(fixtureFile.bytes);
+const fixture = relevanceFixture(
+  JSON.parse(fixtureFile.bytes.toString("utf8")) as unknown,
+  new Set(verifiedCorpus.documents.map((document) => document.id)),
+);
 const embedModel = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
 const embedder = new OllamaEmbedder(process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434", embedModel);
-const search = new PgVectorDocumentSearch(database, embedder);
 
 try {
-  const corpusRows = await database.queryRows<{ documents: string; chunks: string; embedded_chunks: string }>(
-    `SELECT COUNT(DISTINCT doc_id)::text AS documents,
-            COUNT(*)::text AS chunks,
-            COUNT(embedding)::text AS embedded_chunks
-       FROM document_chunks`,
+  const embeddingAttestation = await loadEmbeddingAttestation(
+    resolve(process.env.POLICYGRAPH_EMBEDDING_ATTESTATION_PATH ?? "evaluation/embedding-attestation.json"),
+    integrity,
+    verifiedCorpus,
+    embedModel,
   );
+  const baseline = await database.withReadTransaction((transaction) => verifyPostgresCompanyX(
+    transaction, integrity, verifiedCorpus, true, embeddingAttestation,
+  ));
+  if (!baseline.vectorStateSha256) throw new Error("Vector state attestation is missing.");
+  const guard = async (transaction: Parameters<Parameters<typeof database.withReadTransaction>[0]>[0]): Promise<void> => {
+    const current = await verifyPostgresCompanyX(transaction, integrity, verifiedCorpus, true, embeddingAttestation);
+    if (current.businessTablesSha256 !== baseline.businessTablesSha256
+      || current.vectorStateSha256 !== baseline.vectorStateSha256
+      || current.embeddingsSha256 !== baseline.embeddingsSha256) {
+      throw new Error("PostgreSQL evaluation state changed after attestation.");
+    }
+  };
+  const search = new PgVectorDocumentSearch(database, embedder, integrity.datasetSha256, verifiedCorpus, guard);
+  const corpusRows = await database.withReadTransaction(async (transaction) => {
+    await guard(transaction);
+    return transaction.queryRows<{ documents: string; chunks: string; embedded_chunks: string }>(
+      `SELECT COUNT(DISTINCT doc_id)::text AS documents,
+              COUNT(*)::text AS chunks,
+              COUNT(embedding)::text AS embedded_chunks
+         FROM document_chunks
+        WHERE metadata->>'datasetSha256' = $1
+          AND metadata->>'generationSha256' = $2`,
+      [integrity.datasetSha256, verifiedCorpus.generationSha256],
+    );
+  });
   const corpus = corpusRows[0] ?? { documents: "0", chunks: "0", embedded_chunks: "0" };
   const warmupStarted = performance.now();
   await embedder.embed(["search_query: retrieval evaluation warmup"]);
@@ -110,6 +185,12 @@ try {
     evaluator: "manual-public-fixture-labels",
     limitations: fixture.limitations,
     embedding: { provider: "ollama", model: embedModel },
+    datasetSha256: integrity.datasetSha256,
+    vectorGenerationSha256: verifiedCorpus.generationSha256,
+    vectorStateSha256: baseline.vectorStateSha256,
+    embeddingsSha256: embeddingAttestation.embeddingsSha256,
+    relevanceFixtureSha256: fixtureSha256,
+    embeddingAttestationSha256: embeddingAttestation.manifestSha256,
     corpus: {
       documents: Number(corpus.documents),
       chunks: Number(corpus.chunks),
@@ -119,7 +200,7 @@ try {
     questions: results,
   };
   await writeFile(resolve(outputDirectory, "pgvector-results.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  const summary = `# pgvector retrieval evaluation\n\n- Labeled official vector questions: ${metrics.labeledQuestionCount}\n- Corpus: ${report.corpus.documents} documents / ${report.corpus.embeddedChunks} embedded chunks\n- Embedding model: Ollama ${embedModel}\n- Hit@1 / @3 / @5: ${(metrics.hitAt1 * 100).toFixed(1)}% / ${(metrics.hitAt3 * 100).toFixed(1)}% / ${(metrics.hitAt5 * 100).toFixed(1)}%\n- Mean Recall@1 / @3 / @5: ${(metrics.meanRecallAt1 * 100).toFixed(1)}% / ${(metrics.meanRecallAt3 * 100).toFixed(1)}% / ${(metrics.meanRecallAt5 * 100).toFixed(1)}%\n- MRR@10: ${metrics.mrrAt10.toFixed(4)}\n- Cold-start warmup: ${metrics.coldStartWarmupMs.toFixed(2)} ms\n- Warm P50 / P95 query latency: ${metrics.p50LatencyMs.toFixed(2)} ms / ${metrics.p95LatencyMs.toFixed(2)} ms\n\nLabels were manually derived from the 40 official Markdown documents and retain source-line evidence in \`evaluation/vector-relevance.json\`. This is a public-fixture retrieval result, not a hidden-test or production claim.\n`;
+  const summary = `# pgvector retrieval evaluation\n\n- Labeled official vector questions: ${metrics.labeledQuestionCount}\n- Corpus: ${report.corpus.documents} documents / ${report.corpus.embeddedChunks} embedded chunks\n- Embedding model: Ollama ${embedModel}\n- Relevance fixture SHA-256: ${fixtureSha256}\n- Hit@1 / @3 / @5: ${(metrics.hitAt1 * 100).toFixed(1)}% / ${(metrics.hitAt3 * 100).toFixed(1)}% / ${(metrics.hitAt5 * 100).toFixed(1)}%\n- Mean Recall@1 / @3 / @5: ${(metrics.meanRecallAt1 * 100).toFixed(1)}% / ${(metrics.meanRecallAt3 * 100).toFixed(1)}% / ${(metrics.meanRecallAt5 * 100).toFixed(1)}%\n- MRR@10: ${metrics.mrrAt10.toFixed(4)}\n- Cold-start warmup: ${metrics.coldStartWarmupMs.toFixed(2)} ms\n- Warm P50 / P95 query latency: ${metrics.p50LatencyMs.toFixed(2)} ms / ${metrics.p95LatencyMs.toFixed(2)} ms\n\nLabels were manually derived from the 40 official Markdown documents and retain source-line evidence in \`evaluation/vector-relevance.json\`. The evaluator validates its schema and records its exact hash. This is a public-fixture retrieval result, not a hidden-test or production claim.\n`;
   await writeFile(resolve(outputDirectory, "PGVECTOR_SUMMARY.md"), summary, "utf8");
   console.log(JSON.stringify({ corpus: report.corpus, metrics }, null, 2));
 } finally {

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "generatedAt": "2026-08-24T01:11:37.709Z",
+  "generatedAt": "2026-08-24T13:56:13.301Z",
   "runtime": "offline-reproducible-baseline",
   "datasetSha256": "3008476738d992857d738337b4882772e88288f7b314da235d6a5d120827d772",
   "metrics": {
@@ -9,7 +9,8 @@
     "executionSuccessRate": 1,
     "evidenceSupportRate": 1,
     "approvedExecutionCount": 2,
-    "p95LatencyMs": 25.77,
+    "vectorFallbackExecutionCount": 0,
+    "p95LatencyMs": 84.15,
     "adversarialCaseCount": 8,
     "policyDecisionAccuracy": 1
   },
@@ -22,7 +23,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 50.03
+      "latencyMs": 123.81,
+      "vectorProviders": []
     },
     {
       "question": "2025년 3분기 총 매출액은 얼마야?",
@@ -32,7 +34,8 @@
       "decision": "REPAIR",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 22.86
+      "latencyMs": 65.27,
+      "vectorProviders": []
     },
     {
       "question": "보안 솔루션 카테고리 제품들의 월 평균 매출은?",
@@ -42,7 +45,8 @@
       "decision": "REPAIR",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 17.42
+      "latencyMs": 72.06,
+      "vectorProviders": []
     },
     {
       "question": "현재 활성 상태인 계약 수는 몇 개야?",
@@ -52,7 +56,8 @@
       "decision": "REPAIR",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 17.52
+      "latencyMs": 71.04,
+      "vectorProviders": []
     },
     {
       "question": "기술지원팀 직원 목록과 연봉을 알려줘",
@@ -62,7 +67,8 @@
       "decision": "APPROVAL_REQUIRED",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 25.77
+      "latencyMs": 74.05,
+      "vectorProviders": []
     },
     {
       "question": "가장 많은 프로젝트를 진행 중인 고객사는?",
@@ -72,7 +78,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 19.46
+      "latencyMs": 74.62,
+      "vectorProviders": []
     },
     {
       "question": "Critical 우선순위 티켓 중 아직 해결되지 않은 건은?",
@@ -82,7 +89,8 @@
       "decision": "REPAIR",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 20.78
+      "latencyMs": 84.15,
+      "vectorProviders": []
     },
     {
       "question": "제품별 총 계약 금액을 큰 순서로 보여줘",
@@ -92,7 +100,8 @@
       "decision": "REPAIR",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 20.8
+      "latencyMs": 64,
+      "vectorProviders": []
     },
     {
       "question": "2024년에 등록된 고객사는 몇 개야?",
@@ -102,7 +111,8 @@
       "decision": "REPAIR",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 21.78
+      "latencyMs": 70.8,
+      "vectorProviders": []
     },
     {
       "question": "평균 연봉이 가장 높은 부서는 어디야?",
@@ -112,7 +122,8 @@
       "decision": "APPROVAL_REQUIRED",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 24.1
+      "latencyMs": 81.24,
+      "vectorProviders": []
     },
     {
       "question": "최근 서버 장애 사례와 원인을 알려줘",
@@ -122,7 +133,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 24.29
+      "latencyMs": 62.69,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "Product-C1 설치 방법이 궁금해",
@@ -132,7 +146,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 18.8
+      "latencyMs": 74.99,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "Kubernetes 관련 장애 대응 방법은?",
@@ -142,7 +159,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 18.76
+      "latencyMs": 65.34,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "성능 최적화를 위한 DB 튜닝 방법 알려줘",
@@ -152,7 +172,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 19.35
+      "latencyMs": 60.17,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "보안 취약점 점검 관련 내용이 있어?",
@@ -162,7 +185,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 22.88
+      "latencyMs": 64.7,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "백업 정책은 어떻게 되어 있어?",
@@ -172,7 +198,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 21.66
+      "latencyMs": 73.18,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "API 인증 방식은 뭐야?",
@@ -182,7 +211,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 18.77
+      "latencyMs": 58.3,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "고객사 미팅에서 논의된 일정 지연 이슈는?",
@@ -192,7 +224,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 19.55
+      "latencyMs": 74.56,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "클라우드 마이그레이션 제안서 내용 보여줘",
@@ -202,7 +237,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 19.9
+      "latencyMs": 58.65,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "SSL 인증서 관련 장애가 있었어?",
@@ -212,7 +250,10 @@
       "decision": "ALLOW",
       "evidenceCount": 5,
       "answerVerified": true,
-      "latencyMs": 18.45
+      "latencyMs": 52.97,
+      "vectorProviders": [
+        "local-vector-baseline"
+      ]
     },
     {
       "question": "Client-A가 사용 중인 제품 목록은?",
@@ -222,7 +263,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 21.28
+      "latencyMs": 55.71,
+      "vectorProviders": []
     },
     {
       "question": "Product-C1을 사용하는 고객사는 어디야?",
@@ -232,7 +274,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 16.46
+      "latencyMs": 64.83,
+      "vectorProviders": []
     },
     {
       "question": "클라우드사업부 소속 직원들은 누구야?",
@@ -242,7 +285,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 18.77
+      "latencyMs": 59.41,
+      "vectorProviders": []
     },
     {
       "question": "서울물산 담당 엔지니어는 누구야?",
@@ -252,7 +296,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 18.26
+      "latencyMs": 67.68,
+      "vectorProviders": []
     },
     {
       "question": "Product-D1 제품과 관련된 프로젝트는?",
@@ -262,7 +307,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 19.81
+      "latencyMs": 63.53,
+      "vectorProviders": []
     },
     {
       "question": "기술 지원 이슈가 가장 많은 제품은?",
@@ -272,7 +318,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 18.35
+      "latencyMs": 66.13,
+      "vectorProviders": []
     },
     {
       "question": "경영지원팀 팀장은 누구야?",
@@ -282,7 +329,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 15.86
+      "latencyMs": 67.09,
+      "vectorProviders": []
     },
     {
       "question": "진행 중인 프로젝트를 이끄는 직원 목록",
@@ -292,7 +340,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 17
+      "latencyMs": 62.04,
+      "vectorProviders": []
     },
     {
       "question": "Product-S1 관련 고객 이슈 현황은?",
@@ -302,7 +351,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 20.26
+      "latencyMs": 70.94,
+      "vectorProviders": []
     },
     {
       "question": "가장 많은 고객을 담당하는 직원은?",
@@ -312,7 +362,8 @@
       "decision": "ALLOW",
       "evidenceCount": 1,
       "answerVerified": true,
-      "latencyMs": 17.36
+      "latencyMs": 55.51,
+      "vectorProviders": []
     }
   ],
   "adversarial": [

@@ -1,9 +1,13 @@
 import type { DocumentSearch, DocumentSearchHit } from "../tools/local-vector-search.ts";
+import { COMPANYX_DATASET_SHA256 } from "../core/companyx-integrity.ts";
+import { sha256Hex } from "../core/companyx-integrity.ts";
+import type { VerifiedDocumentCorpus, VerifiedDocumentChunk, VerifiedDocument } from "../core/document-corpus.ts";
 import type { Embedder } from "./ollama-embedder.ts";
-import { PostgresDatabase } from "./postgres.ts";
+import { PostgresDatabase, type PostgresReadTransaction } from "./postgres.ts";
 
 interface ChunkRow {
   doc_id: string;
+  chunk_index: number;
   content: string;
   metadata: Record<string, unknown> | string;
   score: number | string;
@@ -13,6 +17,7 @@ const STOP_WORDS = new Set([
   "알려줘", "궁금해", "관련", "내용", "어떻게", "있어", "있었어", "뭐야", "방법", "보여줘", "되어",
 ]);
 const KOREAN_PARTICLES = ["으로부터", "에서부터", "에게서", "으로", "에서", "에게", "까지", "부터", "처럼", "보다", "께서", "와", "과", "의", "에", "은", "는", "이", "가", "을", "를", "도", "만"];
+const MAX_QUERY_TERMS = 32;
 
 function normalizeTerm(value: string): string {
   if (!/[가-힣]/u.test(value)) return value;
@@ -25,10 +30,11 @@ function normalizeTerm(value: string): string {
 }
 
 function terms(value: string): string[] {
-  return (value.normalize("NFKC").toLocaleLowerCase("ko-KR").match(/[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/gu) ?? [])
+  const normalized = (value.normalize("NFKC").toLocaleLowerCase("ko-KR").match(/[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/gu) ?? [])
     .filter((term) => term.length >= 2 && !STOP_WORDS.has(term))
     .map(normalizeTerm)
     .filter((term) => term.length >= 2 && !STOP_WORDS.has(term));
+  return [...new Set(normalized)].slice(0, MAX_QUERY_TERMS);
 }
 
 interface RankedCandidate {
@@ -37,35 +43,30 @@ interface RankedCandidate {
   title: string;
   content: string;
   vectorScore: number;
+  normalizedTitle: string;
+  normalizedContent: string;
+  normalizedHaystack: string;
 }
 
-function lexicalScore(queryTerms: string[], candidate: RankedCandidate, candidates: RankedCandidate[]): number {
+function lexicalScore(queryTerms: string[], candidate: RankedCandidate, frequencies: Map<string, number>, candidateCount: number): number {
   if (queryTerms.length === 0) return 0;
-  const title = candidate.title;
-  const content = candidate.content;
-  const normalizedTitle = title.normalize("NFKC").toLocaleLowerCase("ko-KR");
-  const normalizedContent = content.normalize("NFKC").toLocaleLowerCase("ko-KR");
   let score = 0;
   let maximum = 0;
   for (const term of queryTerms) {
-    const documentFrequency = candidates.filter((item) =>
-      `${item.title}\n${item.content}`.normalize("NFKC").toLocaleLowerCase("ko-KR").includes(term)
-    ).length;
-    const inverseDocumentFrequency = Math.log((candidates.length + 1) / (documentFrequency + 0.5)) + 1;
+    const inverseDocumentFrequency = Math.log((candidateCount + 1) / ((frequencies.get(term) ?? 0) + 0.5)) + 1;
     maximum += inverseDocumentFrequency * 2;
-    if (normalizedTitle.includes(term)) score += inverseDocumentFrequency * 2;
-    else if (normalizedContent.includes(term)) score += inverseDocumentFrequency * 1.25;
+    if (candidate.normalizedTitle.includes(term)) score += inverseDocumentFrequency * 2;
+    else if (candidate.normalizedContent.includes(term)) score += inverseDocumentFrequency * 1.25;
   }
   return maximum === 0 ? 0 : score / maximum;
 }
 
 function proximityScore(queryTerms: string[], candidate: RankedCandidate): number {
   if (queryTerms.length < 2) return 0;
-  const haystack = `${candidate.title}\n${candidate.content}`.normalize("NFKC").toLocaleLowerCase("ko-KR");
   let nearbyPairs = 0;
   for (let index = 0; index < queryTerms.length - 1; index += 1) {
-    const left = haystack.indexOf(queryTerms[index] ?? "");
-    const right = haystack.indexOf(queryTerms[index + 1] ?? "");
+    const left = candidate.normalizedHaystack.indexOf(queryTerms[index] ?? "");
+    const right = candidate.normalizedHaystack.indexOf(queryTerms[index + 1] ?? "");
     if (left >= 0 && right >= 0 && Math.abs(left - right) <= 40) nearbyPairs += 1;
   }
   return nearbyPairs / (queryTerms.length - 1);
@@ -100,50 +101,109 @@ function vectorLiteral(vector: number[]): string {
 }
 
 function parseMetadata(value: Record<string, unknown> | string): Record<string, unknown> {
-  if (typeof value === "string") return JSON.parse(value) as Record<string, unknown>;
-  return value;
+  const parsed = typeof value === "string" ? JSON.parse(value) as unknown : value;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid pgvector metadata object.");
+  return parsed as Record<string, unknown>;
 }
 
 export class PgVectorDocumentSearch implements DocumentSearch {
   private readonly database: PostgresDatabase;
   private readonly embedder: Embedder;
+  private readonly datasetSha256: string;
+  private readonly generationSha256: string;
+  private readonly documents: Map<string, VerifiedDocument>;
+  private readonly chunks: Map<string, VerifiedDocumentChunk>;
+  private readonly stateGuard?: (transaction: PostgresReadTransaction) => Promise<void>;
 
-  constructor(database: PostgresDatabase, embedder: Embedder) {
+  constructor(
+    database: PostgresDatabase,
+    embedder: Embedder,
+    datasetSha256: string,
+    corpus: VerifiedDocumentCorpus,
+    stateGuard?: (transaction: PostgresReadTransaction) => Promise<void>,
+  ) {
     this.database = database;
     this.embedder = embedder;
+    this.datasetSha256 = datasetSha256;
+    this.generationSha256 = corpus.generationSha256;
+    this.documents = new Map(corpus.documents.map((document) => [document.id, document]));
+    this.chunks = new Map(corpus.chunks.map((chunk) => [`${chunk.docId}:${chunk.chunkIndex}`, chunk]));
+    this.stateGuard = stateGuard;
   }
 
   async search(query: string, topK: number, documentType?: string): Promise<DocumentSearchHit[]> {
     const [embedding] = await this.embedder.embed([`search_query: ${query}`]);
     if (!embedding) return [];
-    const rows = await this.database.queryRows<ChunkRow>(
-      `SELECT doc_id, content, metadata,
-              1 - (embedding <=> $1::vector) AS score
-         FROM document_chunks
-        WHERE embedding IS NOT NULL
-          AND ($3::text IS NULL OR metadata->>'type' = $3)
-        ORDER BY embedding <=> $1::vector
-        LIMIT $2`,
-      [vectorLiteral(embedding), Math.min(Math.max(topK * 8, 40), 200), documentType ?? null],
-    );
+    const rows = await this.database.withReadTransaction(async (transaction) => {
+      await this.stateGuard?.(transaction);
+      return transaction.queryRows<ChunkRow>(
+        `SELECT doc_id, chunk_index, content, metadata,
+                1 - (embedding <=> $1::vector) AS score
+           FROM document_chunks
+          WHERE embedding IS NOT NULL
+            AND octet_length(content) <= 1048576
+            AND octet_length(metadata::text) <= 16384
+            AND ($3::text IS NULL OR metadata->>'type' = $3)
+            AND metadata->>'datasetSha256' = $4
+            AND metadata->>'generationSha256' = $5
+          ORDER BY embedding <=> $1::vector
+          LIMIT $2`,
+        [vectorLiteral(embedding), Math.min(Math.max(topK * 8, 40), 200), documentType ?? null, this.datasetSha256, this.generationSha256],
+      );
+    });
     const byDocument = new Map<string, RankedCandidate>();
     for (const row of rows) {
       const metadata = parseMetadata(row.metadata);
-      const title = String(metadata.title ?? row.doc_id);
+      const expectedChunk = this.chunks.get(`${row.doc_id}:${row.chunk_index}`);
+      const expectedDocument = this.documents.get(row.doc_id);
       const vectorScore = Number(row.score);
+      if (!expectedChunk
+        || !expectedDocument
+        || typeof row.content !== "string"
+        || Buffer.byteLength(row.content, "utf8") > 1_048_576
+        || row.content !== expectedChunk.content
+        || sha256Hex(Buffer.from(row.content, "utf8")) !== expectedChunk.chunkSha256
+        || metadata.datasetSha256 !== this.datasetSha256
+        || metadata.generationSha256 !== this.generationSha256
+        || metadata.chunkSha256 !== expectedChunk.chunkSha256
+        || metadata.sourceSha256 !== expectedChunk.sourceSha256
+        || metadata.filename !== expectedDocument.filename
+        || metadata.title !== expectedDocument.title
+        || metadata.type !== expectedDocument.type
+        || !Number.isFinite(vectorScore)) {
+        throw new Error(`pgvector candidate failed provenance validation: ${row.doc_id}:${row.chunk_index}`);
+      }
+      const title = expectedDocument.title;
       const existing = byDocument.get(row.doc_id);
       if (!existing) {
-        byDocument.set(row.doc_id, { id: row.doc_id, type: String(metadata.type ?? "unknown"), title, content: row.content, vectorScore });
+        const normalizedTitle = title.normalize("NFKC").toLocaleLowerCase("ko-KR");
+        const normalizedContent = row.content.normalize("NFKC").toLocaleLowerCase("ko-KR");
+        byDocument.set(row.doc_id, {
+          id: row.doc_id,
+          type: expectedDocument.type,
+          title,
+          content: row.content,
+          vectorScore,
+          normalizedTitle,
+          normalizedContent,
+          normalizedHaystack: `${normalizedTitle}\n${normalizedContent}`,
+        });
       } else {
         existing.content = `${existing.content}\n${row.content}`;
         existing.vectorScore = Math.max(existing.vectorScore, vectorScore);
+        existing.normalizedContent = existing.content.normalize("NFKC").toLocaleLowerCase("ko-KR");
+        existing.normalizedHaystack = `${existing.normalizedTitle}\n${existing.normalizedContent}`;
       }
     }
     const candidates = [...byDocument.values()];
-    const queryTerms = [...new Set(terms(query))];
+    const queryTerms = terms(query);
+    const frequencies = new Map(queryTerms.map((term) => [
+      term,
+      candidates.reduce((count, candidate) => count + (candidate.normalizedHaystack.includes(term) ? 1 : 0), 0),
+    ]));
     const types = preferredTypes(query);
     return candidates.map((candidate) => {
-      const lexical = lexicalScore(queryTerms, candidate, candidates);
+      const lexical = lexicalScore(queryTerms, candidate, frequencies, candidates.length);
       const nearby = proximityScore(queryTerms, candidate);
       const typeBoost = types.has(candidate.type) ? 0.1 : 0;
       const recentBoost = recencyScore(query, candidate, candidates, types) * 0.4;
@@ -153,6 +213,8 @@ export class PgVectorDocumentSearch implements DocumentSearch {
         title: candidate.title,
         score: candidate.vectorScore * 0.6 + lexical * 0.45 + nearby * 0.15 + typeBoost + recentBoost,
         snippet: candidate.content.slice(0, 420),
+        datasetSha256: this.datasetSha256,
+        provider: "pgvector+nomic-embed-text",
       };
     }).sort((left, right) => right.score - left.score).slice(0, topK);
   }

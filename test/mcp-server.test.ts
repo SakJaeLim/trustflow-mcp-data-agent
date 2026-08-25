@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { createTrustFlowServer } from "../src/mcp/server.ts";
 import { createRuntime } from "../src/runtime.ts";
+import type { TrustFlowRuntime } from "../src/runtime.ts";
 
 test("air server exposes exactly the three required Company-X tools", async () => {
   const runtime = await createRuntime({
@@ -27,4 +28,19 @@ test("air server exposes exactly the three required Company-X tools", async () =
   } finally {
     await runtime.close();
   }
+});
+
+test("MCP boundary returns only a generic error and correlation ID", async () => {
+  const internalDetail = "C:\\private\\audit-ledger.jsonl";
+  const runtime = {
+    actorRole: "analyst",
+    planner: { plan: async () => { throw new Error(internalDetail); } },
+  } as unknown as TrustFlowRuntime;
+  const server = createTrustFlowServer(runtime);
+  const raw = await server.callTool("nl2sql", { question: "고객 수는?" });
+  assert.doesNotMatch(String(raw), /private|audit-ledger/u);
+  const result = JSON.parse(String(raw)) as { ok: boolean; error: { code: string; correlationId: string } };
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, "POLICYGRAPH_EXECUTION_FAILED");
+  assert.match(result.error.correlationId, /^[0-9a-f-]{36}$/u);
 });

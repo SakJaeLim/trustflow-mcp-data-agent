@@ -28,7 +28,7 @@ const runtime = await createRuntime({
 const chat = new OllamaChatClient(
   process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434",
   process.env.OLLAMA_CHAT_MODEL ?? "gemma4:e2b",
-  Number(process.env.OLLAMA_CHAT_TIMEOUT_MS ?? 300_000),
+  Number(process.env.OLLAMA_CHAT_TIMEOUT_MS ?? 600_000),
 );
 const planner = new CompanyXPlanner(chat);
 const results = [];
@@ -80,17 +80,27 @@ try {
 }
 
 const passed = results.filter((item) => item.passed).length;
+const modelBackedCount = results.filter((item) => "rawTool" in item && item.rawTool !== undefined).length;
+const safeModelFallbackCount = results.length - modelBackedCount;
 const report = {
   schemaVersion: "1.0",
   generatedAt: new Date().toISOString(),
   model: chat.model,
   runtime: offline ? "offline-fixture" : "postgres-pgvector",
-  metrics: { caseCount: results.length, passed, passRate: results.length === 0 ? 0 : passed / results.length },
+  metrics: {
+    caseCount: results.length,
+    passed,
+    passRate: results.length === 0 ? 0 : passed / results.length,
+    modelBackedCount,
+    safeModelFallbackCount,
+  },
   results,
-  limitations: "Curated public adversarial regression, not a formal proof or hidden red-team benchmark.",
+  limitations: safeModelFallbackCount > 0
+    ? "Curated public adversarial regression. Local model calls fell back safely for some cases; these are resilience results, not model-quality measurements or a hidden red-team benchmark."
+    : "Curated public adversarial regression, not a formal proof or hidden red-team benchmark.",
 };
 await mkdir(resolve("artifacts/evaluation"), { recursive: true });
 await writeFile(resolve("artifacts/evaluation", offline ? "llm-security-results-offline-current.json" : "llm-security-results.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
-await writeFile(resolve("artifacts/evaluation", offline ? "LLM_SECURITY_OFFLINE_CURRENT.md" : "LLM_SECURITY_SUMMARY.md"), `# LLM adversarial regression\n\n- Model: ${chat.model}\n- Runtime: ${report.runtime}\n- Passed: ${passed}/${results.length} (${(report.metrics.passRate * 100).toFixed(1)}%)\n- Controls exercised: structured output, intent normalization, AST SQL gate, role policy, vector budget, graph hop budget.\n\nThis is a curated public regression suite, not a formal security proof.\n`, "utf8");
+await writeFile(resolve("artifacts/evaluation", offline ? "LLM_SECURITY_OFFLINE_CURRENT.md" : "LLM_SECURITY_SUMMARY.md"), `# LLM adversarial regression\n\n- Model configured: ${chat.model}\n- Runtime: ${report.runtime}\n- Passed: ${passed}/${results.length} (${(report.metrics.passRate * 100).toFixed(1)}%)\n- Model-backed cases: ${report.metrics.modelBackedCount}/${results.length}\n- Safe model-fallback cases: ${report.metrics.safeModelFallbackCount}/${results.length}\n- Controls exercised: structured output, intent normalization, AST SQL gate, role policy, vector budget, graph hop budget.\n\nThis is a curated public resilience regression suite, not a model-quality claim, formal security proof, or hidden red-team benchmark.\n`, "utf8");
 console.log(JSON.stringify(report.metrics, null, 2));
 if (passed !== results.length) process.exitCode = 1;

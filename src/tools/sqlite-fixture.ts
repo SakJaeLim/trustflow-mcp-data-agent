@@ -1,10 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import type { CompanyXIntegrity } from "../core/companyx-integrity.ts";
 
 export interface SqlQueryResult {
   rows: Record<string, unknown>[];
   rowCount: number;
+  datasetStateSha256?: string;
 }
 
 export interface SqlRunner {
@@ -49,6 +51,15 @@ export class SqliteFixture implements SqlRunner {
       readFile(join(sqlDirectory, "01-schema.sql"), "utf8"),
       readFile(join(sqlDirectory, "02-data.sql"), "utf8"),
     ]);
+    const database = new DatabaseSync(":memory:");
+    database.exec(postgresSchemaToSqlite(schema));
+    database.exec(postgresDataToSqlite(data));
+    return new SqliteFixture(database);
+  }
+
+  static fromIntegrity(integrity: CompanyXIntegrity): SqliteFixture {
+    const schema = integrity.readFile("sql/01-schema.sql").toString("utf8");
+    const data = integrity.readFile("sql/02-data.sql").toString("utf8");
     const database = new DatabaseSync(":memory:");
     database.exec(postgresSchemaToSqlite(schema));
     database.exec(postgresDataToSqlite(data));

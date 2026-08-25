@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { defineServer, defineTool, type AirServer } from "@airmcp-dev/core";
@@ -24,6 +25,21 @@ async function execute(runtime: TrustFlowRuntime, plan: QueryPlan, context?: Run
   return result;
 }
 
+interface McpPublicError {
+  ok: false;
+  error: { code: "POLICYGRAPH_EXECUTION_FAILED"; correlationId: string };
+}
+
+async function atMcpBoundary<T>(operation: () => Promise<T>): Promise<T | McpPublicError> {
+  try {
+    return await operation();
+  } catch (error) {
+    const correlationId = randomUUID();
+    console.error(`[policygraph:mcp:${correlationId}] request failed`, error);
+    return { ok: false, error: { code: "POLICYGRAPH_EXECUTION_FAILED", correlationId } };
+  }
+}
+
 export function createPolicyGraphServer(runtime: TrustFlowRuntime): AirServer {
   return defineServer({
     name: "trustflow-companyx",
@@ -38,11 +54,11 @@ export function createPolicyGraphServer(runtime: TrustFlowRuntime): AirServer {
           question: { type: "string", description: "Natural-language Company-X analytics question" },
           approvalReceipt: { type: "string", description: "Optional short-lived admin-signed approval receipt", optional: true },
         },
-        handler: async ({ question, approvalReceipt }) => execute(
-          runtime,
-          await naturalLanguagePlan(String(question), runtime, "sql.query"),
-          { approvalReceipt: typeof approvalReceipt === "string" ? approvalReceipt : undefined },
-        ),
+        handler: async ({ question, approvalReceipt }) => atMcpBoundary(async () => execute(
+            runtime,
+            await naturalLanguagePlan(String(question), runtime, "sql.query"),
+            { approvalReceipt: typeof approvalReceipt === "string" ? approvalReceipt : undefined },
+          )),
       }),
       defineTool("vector_search", {
         description: "Search Company-X documents after enforcing evidence and data-scope budgets.",
@@ -50,20 +66,20 @@ export function createPolicyGraphServer(runtime: TrustFlowRuntime): AirServer {
           question: { type: "string", description: "Natural-language document question" },
           topK: { type: "number", description: "Maximum results", optional: true },
         },
-        handler: async ({ question, topK }) => {
+        handler: async ({ question, topK }) => atMcpBoundary(async () => {
           const plan = await naturalLanguagePlan(String(question), runtime, "vector.search");
           const step = plan.steps[0];
           if (step?.tool === "vector.search" && typeof topK === "number") step.input.topK = Math.trunc(topK);
           return execute(runtime, plan);
-        },
+        }),
       }),
       defineTool("knowledge_graph", {
         description: "Resolve a Company-X relationship question with allow-listed traversals or bounded relation aggregation.",
         params: { question: { type: "string", description: "Natural-language Company-X relationship question" } },
-        handler: async ({ question }) => execute(
-          runtime,
-          await naturalLanguagePlan(String(question), runtime, "graph.traverse"),
-        ),
+        handler: async ({ question }) => atMcpBoundary(async () => execute(
+            runtime,
+            await naturalLanguagePlan(String(question), runtime, "graph.traverse"),
+          )),
       }),
     ],
   });

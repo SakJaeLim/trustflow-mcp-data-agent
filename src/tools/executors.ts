@@ -22,17 +22,28 @@ export class SqlStepExecutor implements StepExecutor {
   readonly tool = "sql.query" as const;
   private readonly runner: SqlRunner;
   private readonly source: string;
+  private readonly datasetSha256?: string;
+  private readonly datasetStateSha256?: string;
 
-  constructor(runner: SqlRunner, source = "companyx.postgresql") {
+  constructor(runner: SqlRunner, source = "companyx.postgresql", datasetSha256?: string, datasetStateSha256?: string) {
     this.runner = runner;
     this.source = source;
+    this.datasetSha256 = datasetSha256;
+    this.datasetStateSha256 = datasetStateSha256;
   }
 
   async execute(step: PlanStep): Promise<EvidenceItem[]> {
     if (step.tool !== this.tool) throw new Error(`SQL executor received ${step.tool}`);
     const sqlStep = step as SqlStep;
     const result = await this.runner.query(sqlStep.input.sql, sqlStep.input.maxRows ?? 100);
-    const payload = { sql: sqlStep.input.sql, maxRows: sqlStep.input.maxRows ?? 100, rowCount: result.rowCount, rows: result.rows };
+    const payload = {
+      sql: sqlStep.input.sql,
+      maxRows: sqlStep.input.maxRows ?? 100,
+      rowCount: result.rowCount,
+      rows: result.rows,
+      datasetSha256: this.datasetSha256,
+      datasetStateSha256: result.datasetStateSha256 ?? this.datasetStateSha256,
+    };
     return [
       {
         evidenceId: evidenceId(this.tool, this.source, payload),
@@ -71,7 +82,7 @@ export class VectorStepExecutor implements StepExecutor {
       source: `doc://companyx/${hit.id}`,
       kind: "passage",
       score: hit.score,
-      payload: { ...hit, provider: this.provider },
+      payload: { ...hit, provider: hit.provider ?? this.provider },
     }));
   }
 }
@@ -80,16 +91,18 @@ export class GraphStepExecutor implements StepExecutor {
   readonly tool = "graph.traverse" as const;
   private readonly graph: GraphStore;
   private readonly source: string;
+  private readonly datasetSha256?: string;
 
-  constructor(graph: GraphStore, source = "kg://companyx") {
+  constructor(graph: GraphStore, source = "kg://companyx", datasetSha256?: string) {
     this.graph = graph;
     this.source = source;
+    this.datasetSha256 = datasetSha256 ?? graph.datasetSha256;
   }
 
   async execute(step: PlanStep): Promise<EvidenceItem[]> {
     if (step.tool !== this.tool) throw new Error(`Graph executor received ${step.tool}`);
     const graphStep = step as GraphStep;
-    const result = this.graph.query(graphStep.input);
+    const result = { ...this.graph.query(graphStep.input), datasetSha256: this.datasetSha256 };
     return [
       {
         evidenceId: evidenceId(this.tool, this.source, result),

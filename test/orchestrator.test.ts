@@ -35,7 +35,9 @@ test("orchestrator repairs, executes, and audits a SQL plan", async () => {
     assert.equal(result.policy.decision, "REPAIR");
     assert.ok(result.evidence.some((item) => item.kind === "table"));
     assert.equal(result.answer?.verified, true);
-    assert.equal(ledger.records.length, 1);
+    assert.equal(ledger.records.length, 2);
+    assert.equal(ledger.records[0]?.status, "started");
+    assert.equal(ledger.records[1]?.status, "executed");
     assert.equal(ledger.records[0]?.originalPlanHash.length, 64);
     assert.equal(ledger.records[0]?.recordHash.length, 64);
   } finally {
@@ -50,6 +52,7 @@ test("audit records form a verifiable hash chain", async () => {
     await orchestrator.run(planner.buildPlan("2025년 3분기 총 매출액은 얼마야?"));
     await orchestrator.run(planner.buildPlan("Client-A가 사용 중인 제품 목록은?"));
     assert.deepEqual(verifyAuditRecords(ledger.records), { valid: true, errors: [] });
+    assert.equal(ledger.records.length, 4);
     assert.equal(ledger.records[1]?.previousRecordHash, ledger.records[0]?.recordHash);
   } finally {
     await database.close();
@@ -67,6 +70,7 @@ test("orchestrator does not execute a denied plan", async () => {
     });
     assert.equal(result.status, "denied");
     assert.equal(result.executions.length, 0);
+    assert.equal(ledger.records.length, 1);
     assert.equal(ledger.records[0]?.status, "denied");
   } finally {
     await database.close();
@@ -90,6 +94,9 @@ test("orchestrator keeps executor details out of client-visible evidence", async
       steps: [{ id: "s1", tool: "sql.query", rationale: "test", input: { sql: "SELECT id FROM clients LIMIT 1" } }],
     });
     assert.equal(result.status, "failed");
+    assert.equal(ledger.records.length, 2);
+    assert.equal(ledger.records[0]?.status, "started");
+    assert.equal(ledger.records[1]?.status, "failed");
     const serialized = JSON.stringify(result);
     assert.doesNotMatch(serialized, /password=secret|db\.internal/u);
     assert.match(serialized, /EXECUTION_FAILED/u);

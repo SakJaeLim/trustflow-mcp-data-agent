@@ -16,6 +16,9 @@ interface ApprovalClaims {
   expiresAt: number;
 }
 
+export const MAX_APPROVAL_RECEIPT_BYTES = 4_096;
+const MAX_APPROVAL_IDENTITY_BYTES = 256;
+
 export interface ApprovalVerification {
   valid: boolean;
   reason?: "malformed" | "signature" | "expired" | "actor" | "plan" | "replayed";
@@ -45,6 +48,10 @@ export class ApprovalAuthority {
   }
 
   issue(plan: QueryPlan, approverId: string, ttlSeconds = 300): string {
+    if (!approverId.trim() || Buffer.byteLength(approverId, "utf8") > MAX_APPROVAL_IDENTITY_BYTES
+      || Buffer.byteLength(plan.actor.id, "utf8") > MAX_APPROVAL_IDENTITY_BYTES) {
+      throw new Error("Approval identities are invalid or too long.");
+    }
     const now = Math.floor(Date.now() / 1_000);
     const claims: ApprovalClaims = {
       version: "1.0",
@@ -62,8 +69,11 @@ export class ApprovalAuthority {
   }
 
   async consume(token: string, plan: QueryPlan): Promise<ApprovalVerification> {
+    if (Buffer.byteLength(token, "utf8") > MAX_APPROVAL_RECEIPT_BYTES) return { valid: false, reason: "malformed" };
     const [payload, suppliedSignature, extra] = token.split(".");
-    if (!payload || !suppliedSignature || extra !== undefined) return { valid: false, reason: "malformed" };
+    if (!payload || !suppliedSignature || extra !== undefined
+      || !/^[A-Za-z0-9_-]{1,4000}$/u.test(payload)
+      || !/^[A-Za-z0-9_-]{43}$/u.test(suppliedSignature)) return { valid: false, reason: "malformed" };
     const expectedSignature = this.sign(payload);
     const supplied = Buffer.from(suppliedSignature, "base64url");
     const expected = Buffer.from(expectedSignature, "base64url");
@@ -81,6 +91,9 @@ export class ApprovalAuthority {
       || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(claims.approvalId)
       || typeof claims.approverId !== "string"
       || !claims.approverId.trim()
+      || Buffer.byteLength(claims.approverId, "utf8") > MAX_APPROVAL_IDENTITY_BYTES
+      || typeof claims.actorId !== "string"
+      || Buffer.byteLength(claims.actorId, "utf8") > MAX_APPROVAL_IDENTITY_BYTES
       || claims.approverRole !== "admin"
     ) return { valid: false, reason: "malformed" };
     if (claims.expiresAt <= now || claims.issuedAt > now + 30) return { valid: false, reason: "expired" };

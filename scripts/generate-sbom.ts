@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { resolve } from "node:path";
@@ -29,7 +30,10 @@ interface SbomComponent {
 interface SbomDocument {
   bomFormat?: string;
   specVersion?: string;
-  metadata?: { component?: { "bom-ref"?: string; name?: string; version?: string } };
+  metadata?: {
+    component?: { "bom-ref"?: string; name?: string; version?: string };
+    properties?: Array<{ name: string; value: string }>;
+  };
   components?: SbomComponent[];
   dependencies?: Array<{ ref: string; dependsOn?: string[] }>;
 }
@@ -39,10 +43,18 @@ if (parsed.bomFormat !== "CycloneDX" || !parsed.specVersion) {
   throw new Error("npm produced an invalid CycloneDX SBOM.");
 }
 const packageDocument = JSON.parse(await readFile(resolve("package.json"), "utf8")) as { name: string; version: string };
-if (parsed.metadata?.component) {
+const packageLockSha256 = createHash("sha256").update(await readFile(resolve("package-lock.json"))).digest("hex");
+const composeSha256 = createHash("sha256").update(await readFile(resolve("compose.yaml"))).digest("hex");
+parsed.metadata ??= {};
+if (parsed.metadata.component) {
   parsed.metadata.component.name = packageDocument.name;
   parsed.metadata.component.version = packageDocument.version;
 }
+parsed.metadata.properties = [
+    ...(parsed.metadata.properties ?? []).filter((item) => item.name !== "policygraph:packageLockSha256" && item.name !== "policygraph:composeSha256"),
+    { name: "policygraph:packageLockSha256", value: packageLockSha256 },
+    { name: "policygraph:composeSha256", value: composeSha256 },
+].sort((left, right) => left.name.localeCompare(right.name));
 const externalComponents: SbomComponent[] = [
   { "bom-ref": "runtime:nodejs@24.14.1", type: "framework", name: "Node.js", version: "24.14.1", licenses: [{ license: { id: "MIT" } }], externalReferences: [{ type: "website", url: "https://nodejs.org/" }] },
   { "bom-ref": "service:postgresql@16.15", type: "database", name: "PostgreSQL", version: "16.15", licenses: [{ license: { id: "PostgreSQL" } }], externalReferences: [{ type: "website", url: "https://www.postgresql.org/" }] },

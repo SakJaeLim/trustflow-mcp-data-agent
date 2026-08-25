@@ -1,12 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { splitMarkdown } from "../src/core/document-corpus.ts";
 import { GraphStore } from "../src/tools/graph-store.ts";
 import { LocalVectorSearch } from "../src/tools/local-vector-search.ts";
 import { SqliteFixture } from "../src/tools/sqlite-fixture.ts";
+import { loadVerifiedCompanyXQuestions, verifyCompanyXDataDirectory } from "../src/core/companyx-integrity.ts";
+import { loadVerifiedDocumentCorpus } from "../src/core/document-corpus.ts";
+import { embeddingSha256, loadEmbeddingAttestation } from "../src/core/postgres-integrity.ts";
 
 test("official graph has the published size and traverses Client-A products", async () => {
   const graph = await GraphStore.fromDirectory(resolve("data/companyx/graph"));
@@ -15,6 +18,9 @@ test("official graph has the published size and traverses Client-A products", as
   const result = graph.traverse("Client-A", [{ relation: "USES", direction: "out" }], 20);
   assert.ok(result.resultNodes.length > 0);
   assert.ok(result.resultNodes.every((node) => node.type === "product"));
+  const ranked = graph.query({ mode: "rank", startType: "employee", path: [{ relation: "MANAGES_ACCOUNT", direction: "out" }], maxNodes: 1 });
+  assert.equal(ranked.starts.length, 1);
+  assert.equal(ranked.ranking?.length, 1);
 });
 
 test("local vector baseline finds the Product-C1 install guide", async () => {
@@ -57,5 +63,31 @@ test("SQLite fixture executes queries over the official PostgreSQL seed", async 
     assert.equal(bounded.rowCount, 100);
   } finally {
     await database.close();
+  }
+});
+
+test("official questions and embedding attestation are schema- and hash-bound", async () => {
+  const integrity = await verifyCompanyXDataDirectory();
+  const questions = loadVerifiedCompanyXQuestions(integrity);
+  assert.equal(questions.length, 30);
+  assert.deepEqual(
+    Object.fromEntries(["nl2sql", "vector_search", "knowledge_graph"].map((tool) => [tool, questions.filter((item) => item.tool === tool).length])),
+    { nl2sql: 10, vector_search: 10, knowledge_graph: 10 },
+  );
+  const corpus = loadVerifiedDocumentCorpus(integrity);
+  const manifestPath = resolve("evaluation/embedding-attestation.json");
+  const attestation = await loadEmbeddingAttestation(manifestPath, integrity, corpus, "nomic-embed-text");
+  assert.equal(attestation.hashes.size, corpus.chunks.length);
+  assert.match(attestation.manifestSha256 ?? "", /^[a-f0-9]{64}$/u);
+  assert.notEqual(embeddingSha256([1, 2, 3]), embeddingSha256([1, 2, 4]));
+
+  const root = await mkdtemp(join(tmpdir(), "policygraph-embedding-attestation-"));
+  try {
+    const tamperedPath = join(root, "tampered.json");
+    const tampered = (await readFile(manifestPath, "utf8")).replace(/"dimensions": 768/u, '"dimensions": 767');
+    await writeFile(tamperedPath, tampered, "utf8");
+    await assert.rejects(loadEmbeddingAttestation(tamperedPath, integrity, corpus, "nomic-embed-text"), /header|model|dataset|generation|cardinality/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });

@@ -4,7 +4,7 @@ import { OllamaChatClient } from "../src/adapters/ollama-chat.ts";
 const client = new OllamaChatClient(
   process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434",
   process.env.OLLAMA_CHAT_MODEL ?? "gemma4:e2b",
-  Number(process.env.OLLAMA_CHAT_TIMEOUT_MS ?? 300_000),
+  Number(process.env.OLLAMA_CHAT_TIMEOUT_MS ?? 600_000),
 );
 
 const questions = [

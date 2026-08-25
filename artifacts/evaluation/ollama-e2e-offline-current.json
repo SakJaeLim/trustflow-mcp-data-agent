@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T01:53:39.252Z",
+  "generatedAt": "2026-08-25T02:30:21.248Z",
   "status": "ok",
   "runtime": "offline-fixture",
   "model": "gemma4:e2b",
@@ -17,8 +17,7 @@
     "decision": "DENY",
     "deniedBeforeExecution": true,
     "matchedPolicies": [
-      "POL-SQL-005",
-      "POL-SQL-004"
+      "POL-SQL-005"
     ]
   }
 }

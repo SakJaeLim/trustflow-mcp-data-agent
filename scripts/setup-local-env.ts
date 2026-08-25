@@ -28,7 +28,7 @@ const lines = [
   "POLICYGRAPH_LLM_MODE=disabled",
   "OLLAMA_BASE_URL=http://127.0.0.1:11434",
   "OLLAMA_CHAT_MODEL=gemma4:e2b",
-  "OLLAMA_CHAT_TIMEOUT_MS=300000",
+  "OLLAMA_CHAT_TIMEOUT_MS=600000",
   "OLLAMA_EMBED_MODEL=nomic-embed-text",
   "VECTOR_MODE=pgvector",
   "",

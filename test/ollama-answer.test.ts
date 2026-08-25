@@ -39,6 +39,18 @@ test("Ollama claims must be supported by the evidence IDs they cite", async () =
     { ...evidence("ev_unit", 42), payload: { rows: [{ amount: "42원" }] } },
   ]);
   assert.equal(wrongUnit.generator, "deterministic");
+
+  client.json = async () => ({ claims: [{ text: "총 42원입니다.", evidenceIds: ["ev_bare"] }] });
+  assert.equal((await client.composeAnswer("금액은?", [evidence("ev_bare", 42)])).generator, "deterministic");
+
+  const passage: EvidenceItem = {
+    evidenceId: "ev_decimal", stepId: "s1", tool: "vector.search", source: "doc://decimal", kind: "passage",
+    payload: { title: "가동률", snippet: "현재 가동률은 1.2%입니다." },
+  };
+  client.json = async () => ({ claims: [{ text: "현재 가동률은 12%입니다.", evidenceIds: ["ev_decimal"] }] });
+  assert.equal((await client.composeAnswer("가동률은?", [passage])).generator, "deterministic");
+  client.json = async () => ({ claims: [{ text: "현재 가동률은 \u202e1.2%입니다.", evidenceIds: ["ev_decimal"] }] });
+  assert.equal((await client.composeAnswer("가동률은?", [passage])).generator, "deterministic");
 });
 
 test("Ollama citations contain only evidence actually used by accepted claims", async () => {
@@ -46,7 +58,10 @@ test("Ollama citations contain only evidence actually used by accepted claims", 
   client.json = async () => ({
     claims: [{ text: "총 42건입니다.", evidenceIds: ["ev_right"] }],
   });
-  const result = await client.composeAnswer("몇 건이야?", [evidence("ev_right", 42), evidence("ev_unused", 7)]);
+  const result = await client.composeAnswer("몇 건이야?", [
+    { evidenceId: "ev_right", stepId: "s1", tool: "vector.search", source: "doc://right", kind: "passage", payload: { title: "집계", snippet: "총 42건입니다." } },
+    { evidenceId: "ev_unused", stepId: "s1", tool: "vector.search", source: "doc://unused", kind: "passage", payload: { title: "기타", snippet: "총 7건입니다." } },
+  ]);
   assert.equal(result.generator, "ollama");
   assert.deepEqual(result.citations.map((item) => item.evidenceId), ["ev_right"]);
 
@@ -82,4 +97,29 @@ test("contradictory nonnumeric Ollama prose falls back to deterministic evidence
   const contaminated = await client.composeAnswer("회사는 모든 백업을 영구 중단했습니다.", [source]);
   assert.equal(contaminated.generator, "deterministic");
   assert.doesNotMatch(contaminated.text, /영구 중단/u);
+});
+
+test("Ollama chat admits only one in-flight request and caps its timeout", async () => {
+  const originalFetch = globalThis.fetch;
+  let release: ((value: Response) => void) | undefined;
+  let started: (() => void) | undefined;
+  const didStart = new Promise<void>((resolve) => { started = resolve; });
+  globalThis.fetch = async () => {
+    started?.();
+    return new Promise<Response>((resolve) => { release = resolve; });
+  };
+  try {
+    const client = new OllamaChatClient("http://127.0.0.1:11434", "test", 9_999_999);
+    assert.equal(client.timeoutMs, 600_000);
+    const first = client.json("system", "first");
+    await didStart;
+    await assert.rejects(client.json("system", "second"), /capacity is busy/u);
+    release?.(new Response(JSON.stringify({ message: { content: "{}" } }), {
+      status: 200,
+      headers: { "content-type": "application/json", "content-length": "28" },
+    }));
+    assert.deepEqual(await first, {});
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

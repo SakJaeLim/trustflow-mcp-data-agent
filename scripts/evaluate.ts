@@ -1,9 +1,9 @@
-import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { resolve } from "node:path";
 import type { QueryPlan, ToolName } from "../src/core/model.ts";
 import { createRuntime } from "../src/runtime.ts";
+import { loadVerifiedCompanyXQuestions, verifyCompanyXDataDirectory } from "../src/core/companyx-integrity.ts";
 
 interface QuestionFixture { q: string; tool: "nl2sql" | "vector_search" | "knowledge_graph" }
 
@@ -29,7 +29,9 @@ function percentile95(values: number[]): number {
 
 const outputDirectory = resolve("artifacts/evaluation");
 await mkdir(outputDirectory, { recursive: true });
-const questions = JSON.parse(await readFile(resolve("data/companyx/questions.json"), "utf8")) as QuestionFixture[];
+const dataDirectory = resolve(process.env.COMPANYX_DATA_DIR ?? "data/companyx");
+const integrity = await verifyCompanyXDataDirectory(dataDirectory, process.env.COMPANYX_ARCHIVE_PATH);
+const questions: QuestionFixture[] = loadVerifiedCompanyXQuestions(integrity);
 const evaluationRuntime = process.env.POLICYGRAPH_EVAL_RUNTIME === "postgres" ? "postgres" : "offline";
 const runtime = await createRuntime({
   ...process.env,
@@ -44,6 +46,7 @@ try {
   let executed = 0;
   let verified = 0;
   let approvedExecutions = 0;
+  let vectorFallbackExecutions = 0;
   const latencies: number[] = [];
   const questionResults = [];
 
@@ -59,6 +62,11 @@ try {
     if (result.status === "executed") executed += 1;
     if (result.answer?.verified) verified += 1;
     if (result.policy.decision === "APPROVAL_REQUIRED") approvedExecutions += 1;
+    const vectorProviders = [...new Set(result.evidence
+      .filter((evidence) => evidence.kind === "passage")
+      .map((evidence) => (evidence.payload as { provider?: unknown }).provider)
+      .filter((provider): provider is string => typeof provider === "string"))];
+    if (vectorProviders.includes("local-vector-fallback")) vectorFallbackExecutions += 1;
     questionResults.push({
       question: item.q,
       expectedTool: expectedTools[item.tool],
@@ -68,6 +76,7 @@ try {
       evidenceCount: result.evidence.filter((evidence) => evidence.kind !== "policy").length,
       answerVerified: result.answer?.verified ?? false,
       latencyMs,
+      vectorProviders,
     });
   }
 
@@ -97,13 +106,13 @@ try {
     attackResults.push({ id: attack.id, expected: attack.expected, actual: result.policy.decision, status: result.status, findingCodes: result.policy.findings.map((finding) => finding.code), repairCodes: result.policy.repairs.map((repair) => repair.code) });
   }
 
-  const datasetBytes = await readFile(resolve("data/raw/companyx-dataset-v1.0.zip"));
   const metrics = {
     officialQuestionCount: questions.length,
     routeAccuracy: routesCorrect / questions.length,
     executionSuccessRate: executed / questions.length,
     evidenceSupportRate: verified / questions.length,
     approvedExecutionCount: approvedExecutions,
+    vectorFallbackExecutionCount: vectorFallbackExecutions,
     p95LatencyMs: percentile95(latencies),
     adversarialCaseCount: attacks.length,
     policyDecisionAccuracy: attackCorrect / attacks.length,
@@ -112,14 +121,14 @@ try {
     schemaVersion: "1.0",
     generatedAt: new Date().toISOString(),
     runtime: evaluationRuntime === "postgres" ? `postgres-${process.env.VECTOR_MODE ?? "pgvector"}` : "offline-reproducible-baseline",
-    datasetSha256: createHash("sha256").update(datasetBytes).digest("hex"),
+    datasetSha256: integrity.datasetSha256,
     metrics,
     questions: questionResults,
     adversarial: attackResults,
   };
   const suffix = evaluationRuntime === "postgres" ? "-postgres" : "";
   await writeFile(resolve(outputDirectory, `results${suffix}.json`), `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  const summary = `# PolicyGraph evaluation\n\n- Official questions: ${questions.length}\n- Route accuracy: ${(metrics.routeAccuracy * 100).toFixed(1)}%\n- Execution success: ${(metrics.executionSuccessRate * 100).toFixed(1)}%\n- Evidence-link verification: ${(metrics.evidenceSupportRate * 100).toFixed(1)}%\n- Approved sensitive executions: ${metrics.approvedExecutionCount}\n- P95 latency: ${metrics.p95LatencyMs.toFixed(2)} ms\n- Policy decision accuracy: ${(metrics.policyDecisionAccuracy * 100).toFixed(1)}% (${attackCorrect}/${attacks.length})\n\nOfficial sensitive-field fixtures use the named evaluation approval. Evidence-link verification checks claim-to-evidence references, not semantic answer correctness. These are labeled Company-X fixture and internal adversarial results, not hidden-test performance.\n`;
+  const summary = `# PolicyGraph evaluation\n\n- Official questions: ${questions.length}\n- Route accuracy: ${(metrics.routeAccuracy * 100).toFixed(1)}%\n- Execution success: ${(metrics.executionSuccessRate * 100).toFixed(1)}%\n- Evidence-link verification: ${(metrics.evidenceSupportRate * 100).toFixed(1)}%\n- Approved sensitive executions: ${metrics.approvedExecutionCount}\n- Local vector fallback executions: ${metrics.vectorFallbackExecutionCount}\n- P95 latency: ${metrics.p95LatencyMs.toFixed(2)} ms\n- Policy decision accuracy: ${(metrics.policyDecisionAccuracy * 100).toFixed(1)}% (${attackCorrect}/${attacks.length})\n\nOfficial sensitive-field fixtures use the named evaluation approval. Evidence-link verification checks claim-to-evidence references, not semantic answer correctness. Vector fallback use is counted explicitly and is not reported as pgvector retrieval. These are labeled Company-X fixture and internal adversarial results, not hidden-test performance.\n`;
   await writeFile(resolve(outputDirectory, `SUMMARY${suffix}.md`), summary, "utf8");
   console.log(JSON.stringify(metrics, null, 2));
 } finally {

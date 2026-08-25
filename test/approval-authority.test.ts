@@ -40,6 +40,7 @@ test("only a short-lived plan-bound signed receipt can approve sensitive executi
   assert.equal((await orchestrator.run(plan)).status, "approval_required");
   assert.equal((await orchestrator.run(plan, { approvedBy: "self" } as never)).status, "approval_required");
   assert.equal((await orchestrator.run(plan, { approvalReceipt: "forged.payload" })).status, "approval_required");
+  assert.deepEqual(await authority.consume("x".repeat(4_097), plan), { valid: false, reason: "malformed" });
 
   const wrongPlanReceipt = authority.issue(plan, "security-admin");
   assert.equal((await orchestrator.run(sensitivePlan("different-actor"), { approvalReceipt: wrongPlanReceipt })).status, "approval_required");

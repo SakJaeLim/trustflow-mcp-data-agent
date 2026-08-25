@@ -29,7 +29,7 @@
 ## 제출자 확인 필요
 
 - [x] 접수번호 `555`
-- [x] 공개 GitHub URL과 실제 clone 설치 확인: `https://github.com/SakJaeLim/trustflow-mcp-data-agent` (`npm ci` + 체크섬 데이터 설치 + 37/37)
+- [x] 공개 GitHub URL과 실제 clone 설치 확인: `https://github.com/SakJaeLim/trustflow-mcp-data-agent` (`npm ci` + 체크섬 데이터 설치 + 49/49)
 - [ ] 3분 이내 YouTube URL과 비로그인 재생 확인
 - [x] 개발 보조 AI 실제 적용 범위/비율: 개발 공정 기준 자체 산정 `약 80%`
 - [x] 중복수혜 여부: `해당 없음`

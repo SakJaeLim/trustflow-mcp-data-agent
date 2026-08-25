@@ -205,7 +205,7 @@ function canonicalTool(question: string): ToolName {
 }
 
 export interface PlanTrace {
-  source: "official-template" | "intent-repair" | "llm";
+  source: "official-template" | "intent-repair" | "llm" | "llm-fallback";
   plan: QueryPlan;
   draft?: QueryPlan;
   canonicalQuestion?: string;
@@ -306,9 +306,36 @@ export class CompanyXPlanner {
     try {
       draft = await this.ollama.draftPlan(question, actor);
     } catch (error) {
-      if (!isUnsafeQueryIntent(question)) throw error;
+      const canonical = canonicalQuestion(question);
+      if (canonical) {
+        const normalized = this.normalizeDraft(question, this.buildPlan(canonical, actor));
+        return { source: "intent-repair", ...normalized };
+      }
+      if (!isUnsafeQueryIntent(question) && this.classify(question) === "vector.search") {
+        return {
+          source: "llm-fallback",
+          plan: {
+            planVersion: "1.0",
+            query: question,
+            actor,
+            steps: [{
+              id: "s1",
+              tool: "vector.search",
+              rationale: "로컬 LLM 장애 시에도 문서 검색은 제한된 결정론적 계획으로 수행합니다.",
+              input: { query: question, topK: 5, documentType: inferDocumentType(question) },
+            }],
+          },
+        };
+      }
+      const sensitiveSql = /(연봉|급여|salary)/iu.test(question)
+        ? "SELECT name, salary FROM employees LIMIT 100"
+        : /(contact_email|연락처.*이메일)/iu.test(question)
+          ? "SELECT name, contact_email FROM clients LIMIT 100"
+          : /(email|이메일)/iu.test(question)
+            ? "SELECT name, email FROM employees LIMIT 100"
+            : undefined;
       return {
-        source: "intent-repair",
+        source: isUnsafeQueryIntent(question) ? "intent-repair" : "llm-fallback",
         plan: {
           planVersion: "1.0",
           query: question,
@@ -316,8 +343,13 @@ export class CompanyXPlanner {
           steps: [{
             id: "s1",
             tool: "sql.query",
-            rationale: "안전하지 않은 원문 의도를 구조화된 거부 계획으로 정규화합니다.",
-            input: { sql: "SELECT 1 AS rejected_unsafe_intent", maxRows: 1 },
+            rationale: sensitiveSql
+              ? "로컬 LLM 장애 시 민감 필드를 명시한 계획을 만들어 PolicyGraph가 권한을 판정하게 합니다."
+              : "로컬 LLM 장애 시 실행 불가능한 거부 계획으로 안전하게 전환합니다.",
+            input: {
+              sql: sensitiveSql ?? "SELECT 1 AS planner_unavailable FROM __planner_unavailable__",
+              maxRows: sensitiveSql ? 100 : 1,
+            },
           }],
         },
       };

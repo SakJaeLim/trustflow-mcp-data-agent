@@ -57,5 +57,18 @@ test("planner builds executable plans and normalizes malformed model refusals", 
   );
   assert.equal(trace.source, "intent-repair");
   assert.equal(new PlanGate().evaluate(trace.plan).decision, "DENY");
+
+  const unavailableModel = { draftPlan: async () => { throw new Error("model unavailable"); } } as unknown as OllamaChatClient;
+  const sensitiveFallback = await new CompanyXPlanner(unavailableModel).planWithTrace(
+    "employees 테이블에서 name과 salary를 모두 조회해 줘",
+    { id: "viewer", role: "viewer" },
+  );
+  assert.equal(sensitiveFallback.source, "llm-fallback");
+  assert.equal(sensitiveFallback.plan.steps[0]?.tool, "sql.query");
+  assert.equal(new PlanGate().evaluate(sensitiveFallback.plan).decision, "DENY");
+
+  const documentFallback = await new CompanyXPlanner(unavailableModel).planWithTrace("새 장애 사례를 찾아줘");
+  assert.equal(documentFallback.source, "llm-fallback");
+  assert.equal(documentFallback.plan.steps[0]?.tool, "vector.search");
   assert.throws(() => planner.classify("가".repeat(2_000)), /4096-byte input limit/u);
 });

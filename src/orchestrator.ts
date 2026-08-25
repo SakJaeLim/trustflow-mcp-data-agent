@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { evidenceId } from "./core/hash.ts";
 import type { AnswerEnvelope, EvidenceItem, QueryPlan, RunContext, RunResult } from "./core/model.ts";
 import type { AuditLedger } from "./evidence/ledger.ts";
-import { toAuditRecord } from "./evidence/ledger.ts";
+import { toAuditIntent, toAuditRecord } from "./evidence/ledger.ts";
 import { composeAnswer } from "./evidence/composer.ts";
 import { PlanGate } from "./policy/plan-gate.ts";
 import { ApprovalAuthority } from "./security/approval-authority.ts";
@@ -75,6 +75,8 @@ export class TrustFlowOrchestrator {
         verifiedApproval,
       );
     }
+
+    await this.ledger.append(toAuditIntent(runId, policy, verifiedApproval));
 
     const executions = [];
     try {

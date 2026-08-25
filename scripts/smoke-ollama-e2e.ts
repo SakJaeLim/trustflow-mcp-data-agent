@@ -12,7 +12,7 @@ const runtime = await createRuntime({
   POLICYGRAPH_LLM_MODE: "assist",
   OLLAMA_CHAT_MODEL: process.env.OLLAMA_CHAT_MODEL ?? "gemma4:e2b",
   OLLAMA_EMBED_MODEL: process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text",
-  OLLAMA_CHAT_TIMEOUT_MS: process.env.OLLAMA_CHAT_TIMEOUT_MS ?? "300000",
+  OLLAMA_CHAT_TIMEOUT_MS: process.env.OLLAMA_CHAT_TIMEOUT_MS ?? "600000",
   POLICYGRAPH_AUDIT_PATH: process.env.POLICYGRAPH_AUDIT_PATH ?? resolve(`.policygraph/${auditName}`),
 });
 

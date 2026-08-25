@@ -70,8 +70,13 @@ test("PlanGate uses the PostgreSQL AST for CTEs, functions, locks, and wildcard 
   assert.equal(gate.evaluate(sqlPlan("SELECT ARRAY[e] AS records FROM employees e LIMIT 1", "viewer")).decision, "DENY");
   assert.equal(gate.evaluate(sqlPlan("SELECT COALESCE(e, e) AS record FROM employees e LIMIT 1", "viewer")).decision, "DENY");
   assert.equal(gate.evaluate(sqlPlan("SELECT e::text AS record FROM employees e LIMIT 1", "viewer")).decision, "DENY");
+  assert.equal(gate.evaluate(sqlPlan("SELECT (e.*)::text AS record FROM employees e LIMIT 1", "viewer")).decision, "DENY");
+  assert.equal(gate.evaluate(sqlPlan("SELECT (e.*, 0) AS record FROM employees e LIMIT 1", "viewer")).decision, "DENY");
   assert.equal(gate.evaluate(sqlPlan("SELECT CASE WHEN true THEN e ELSE e END AS record FROM employees e LIMIT 1", "viewer")).decision, "DENY");
   assert.equal(gate.evaluate(sqlPlan("WITH x AS (SELECT e FROM employees e) SELECT x FROM x LIMIT 1", "viewer")).decision, "DENY");
+  assert.equal(gate.evaluate(sqlPlan("SELECT e.name FROM employees e WHERE e::text LIKE '%50000000%' LIMIT 10", "viewer")).decision, "DENY");
+  assert.equal(gate.evaluate(sqlPlan("SELECT xmin FROM employees LIMIT 10")).decision, "DENY");
+  assert.equal(gate.evaluate(sqlPlan("SELECT current_user AS db_role LIMIT 10")).decision, "DENY");
   assert.notEqual(gate.evaluate(sqlPlan("SELECT COUNT(*) AS count FROM clients LIMIT 1")).decision, "DENY");
   assert.notEqual(gate.evaluate(sqlPlan("SELECT id FROM clients WHERE name = 'DELETE' LIMIT 1")).decision, "DENY");
 
@@ -92,12 +97,49 @@ test("PlanGate uses the PostgreSQL AST for CTEs, functions, locks, and wildcard 
   const documentBypass = gate.evaluate(sqlPlan("SELECT doc_id, content, metadata, embedding FROM document_chunks LIMIT 100"));
   assert.equal(documentBypass.decision, "DENY");
   assert.ok(documentBypass.findings.some((item) => item.code === "SQL_UNKNOWN_TABLE"));
+  const shadowedDocumentBypass = gate.evaluate(sqlPlan(
+    "WITH document_chunks AS (SELECT id FROM sales LIMIT 1) SELECT content AS content FROM public.document_chunks LIMIT 1",
+  ));
+  assert.equal(shadowedDocumentBypass.decision, "DENY");
+  assert.ok(shadowedDocumentBypass.findings.some((item) => item.code === "SQL_UNKNOWN_TABLE"));
+  const quotedCteAliasBypass = gate.evaluate(sqlPlan(
+    'WITH "DOCUMENT_CHUNKS" AS (SELECT doc_id, content FROM document_chunks) SELECT content AS safe FROM "DOCUMENT_CHUNKS" WHERE safe IS NOT NULL LIMIT 1',
+  ));
+  assert.equal(quotedCteAliasBypass.decision, "DENY");
+  assert.ok(quotedCteAliasBypass.findings.some((item) => item.code === "SQL_UNKNOWN_TABLE"));
+  assert.ok(quotedCteAliasBypass.findings.some((item) => item.code === "SQL_UNKNOWN_COLUMN"));
+
+  const tautologicalJoin = gate.evaluate(sqlPlan(
+    "SELECT c.name, s.amount FROM clients c JOIN sales s ON c.id = c.id AND s.id = s.id LIMIT 5",
+  ));
+  assert.equal(tautologicalJoin.decision, "DENY");
+  assert.ok(tautologicalJoin.findings.some((item) => item.code === "SQL_COMPLEXITY_BUDGET_EXCEEDED"));
+
+  const oversizedSql = gate.evaluate(sqlPlan(`SELECT id FROM clients WHERE name = '${"a".repeat(16_384)}' LIMIT 1`));
+  assert.equal(oversizedSql.decision, "DENY");
+  assert.ok(oversizedSql.findings.some((item) => item.code === "SQL_COMPLEXITY_BUDGET_EXCEEDED"));
 
   const expensive = gate.evaluate(sqlPlan(
     "SELECT COUNT(*) AS n FROM sales a CROSS JOIN sales b CROSS JOIN sales c CROSS JOIN sales d LIMIT 1",
   ));
   assert.equal(expensive.decision, "DENY");
   assert.ok(expensive.findings.some((item) => item.code === "SQL_COMPLEXITY_BUDGET_EXCEEDED"));
+  const repeatedCte = gate.evaluate(sqlPlan(
+    "WITH x AS (SELECT id FROM sales) SELECT COUNT(*) AS n FROM x a JOIN x b ON TRUE JOIN x c ON TRUE LIMIT 1",
+  ));
+  assert.equal(repeatedCte.decision, "DENY");
+  assert.ok(repeatedCte.findings.some((item) => item.code === "SQL_COMPLEXITY_BUDGET_EXCEEDED"));
+  const nestedRecursive = gate.evaluate(sqlPlan(
+    "SELECT COUNT(*) AS count FROM (WITH RECURSIVE sales(id) AS (SELECT 1 UNION ALL SELECT id + 1 FROM sales) SELECT id FROM sales) nested LIMIT 1",
+  ));
+  assert.equal(nestedRecursive.decision, "DENY");
+  const derivedFanout = gate.evaluate(sqlPlan(
+    "SELECT COUNT(*) AS count FROM (VALUES (1),(2)) a(id) JOIN (VALUES (1),(2)) b(id) ON 1=1 JOIN (VALUES (1),(2)) c(id) ON 1=1 JOIN (VALUES (1),(2)) d(id) ON 1=1 LIMIT 1",
+  ));
+  assert.equal(derivedFanout.decision, "DENY");
+  assert.notEqual(gate.evaluate(sqlPlan(
+    "SELECT c.name, SUM(s.amount) AS total_sales FROM sales s JOIN clients c ON c.id = s.client_id GROUP BY c.id, c.name ORDER BY total_sales DESC LIMIT 5",
+  )).decision, "DENY");
 });
 
 test("PlanGate requires approval for sensitive fields", () => {

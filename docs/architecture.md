@@ -77,10 +77,11 @@ sequenceDiagram
         M->>L: 승인 대기 기록
     else REPAIR 또는 ALLOW
         G-->>M: executablePlan
+        M->>L: started + 계획 해시 기록
         M->>X: 등록된 단계만 실행
         X-->>C: 표/문서/그래프 근거
         C-->>M: claim + evidenceId + citation
-        M->>L: 계획 해시 + 실행 + 근거 해시
+        M->>L: 종료 상태 + 실행 + 근거 해시
     end
     M-->>H: 구조화 결과
 ~~~
@@ -149,19 +150,20 @@ AnswerEnvelope의 모든 claim은 정확히 하나의 알려진 evidenceId를 �
 | Sensitive | viewer 거부, analyst 승인 필요, HR/admin 허용 |
 | Vector | 1~10개 근거 |
 | Graph | 허용 관계, 최대 2홉, 최대 50개 노드 |
-| Audit | 모든 종료 상태를 해시 체인 원장에 기록 |
+| Audit | 실행 전 started와 모든 종료 상태를 해시 체인 원장에 기록 |
 | Network | 런타임 도구의 외부 네트워크 의존 금지 |
 
 SQL 검사는 `pgsql-ast-parser`가 만든 PostgreSQL AST를 재귀 순회합니다. 단일 읽기 문장, 8개 업무 테이블·허용 열, 비재귀 CTE, 함수, 잠금, 서브쿼리와 whole-row projection을 확인합니다. 민감 열의 이름을 감추는 base-table 열 별칭 목록과 `JOIN ... USING`, cross join, 3개를 초과한 물리 관계 참조도 실행 전에 차단하고, 다음 방어층을 함께 적용합니다.
 
 - policygraph_reader에 8개 업무 테이블과 내부 `document_chunks`의 SELECT만 명시적으로 부여하고, NL2SQL 허용 목록에서는 `document_chunks` 제외
+- reader 역할의 superuser·DB/역할 생성·상속·복제·RLS 우회 권한 제거, 소유 객체·예상 밖 역할 소속 금지, 연결 수 5 제한
 - PostgreSQL READ ONLY 트랜잭션
 - statement_timeout 5초
 - 바깥 래퍼 쿼리로 결과 최대 100행 강제
 
 ## 6. 감사 원장
 
-각 JSONL 레코드는 다음 무결성 필드를 갖습니다.
+각 실행은 도구 호출 전에 `started` 레코드를 먼저 내구성 있게 기록하고, 실행 후 `executed`, `denied`, `approval_required`, `failed` 중 하나의 종료 레코드를 추가합니다. 각 JSONL 레코드는 다음 무결성 필드를 갖습니다.
 
 - sequence
 - previousRecordHash
@@ -174,15 +176,17 @@ SQL 검사는 `pgsql-ast-parser`가 만든 PostgreSQL AST를 재귀 순회합니
 - 승인자 식별자
 - recordSignature
 
-recordHash는 현재 레코드의 모든 필드와 previousRecordHash를 정규화해 SHA-256으로 계산하고, 각 레코드는 HMAC-SHA-256으로 서명합니다. 한 레코드가 바뀌면 해시·서명이 깨지고, 레코드 삽입·삭제·순서 변경은 다음 링크 또는 sequence 검증에서 드러납니다. 여러 프로세스는 원자적 잠금 파일로 append를 직렬화하며, 손상된 기존 원장에는 새 레코드를 추가하지 않습니다. 감사 서명 키와 체크포인트 경로가 없으면 모든 런타임 모드가 fail closed 됩니다.
+recordHash는 현재 레코드의 모든 필드와 previousRecordHash를 정규화해 SHA-256으로 계산하고, 각 레코드는 HMAC-SHA-256으로 서명합니다. 한 레코드가 바뀌면 해시·서명이 깨지고, 레코드 삽입·삭제·순서 변경은 다음 링크 또는 sequence 검증에서 드러납니다. 원장 64 MiB, 50,000개 레코드, 레코드당 64 KiB 예산을 넘으면 새 실행을 거부합니다. 여러 프로세스는 원자적 잠금 파일로 append를 직렬화하며, 잠금은 단순 경과 시간만으로 삭제하지 않고 손상된 기존 원장에는 새 레코드를 추가하지 않습니다. 감사 서명 키와 체크포인트 경로가 없으면 모든 런타임 모드가 fail closed 됩니다.
 
-최종 sequence와 recordHash도 별도 파일에 HMAC 서명해 임시 파일 fsync 후 원자적으로 교체합니다. 검증 시 체크포인트가 현재 원장의 정확한 head가 아니면 과거에 유효했던 체크포인트도 거부합니다. 체크포인트와 원장을 서로 독립된 보호 영역에 두면 원장 삭제·truncate와 stale checkpoint rollback을 탐지할 수 있습니다. 원장·체크포인트·서명 키를 모두 삭제할 수 있는 공격은 로컬 파일 경계 밖이며, 운영 단계에서는 체크포인트를 WORM 또는 외부 검증 저장소로 옮겨야 합니다.
+최종 sequence와 recordHash도 별도 파일에 HMAC 서명해 임시 파일 fsync 후 원자적으로 교체합니다. 검증 시 체크포인트가 현재 원장의 정확한 head가 아니면 과거에 유효했던 체크포인트도 거부합니다. 체크포인트와 원장을 서로 독립된 보호 영역에 두면 한쪽만 삭제·truncate하거나 과거 상태로 되돌리는 조작을 탐지할 수 있습니다. 원장과 체크포인트를 함께 삭제하거나 함께 교체하는 공격은 로컬 파일 경계 밖이며, 운영 단계에서는 체크포인트를 WORM 또는 외부 검증 저장소로 옮겨야 합니다.
 
 ## 7. 데이터 저장과 검색
 
 ### 관계형 데이터
 
 PostgreSQL 16의 공식 8개 테이블을 사용합니다. MCP 런타임은 읽기 전용 계정으로 접속합니다.
+
+원본 Company-X ZIP의 고정 SHA-256은 설치·런타임·평가·문서 적재에서 반복 검증됩니다. 추출 디렉터리는 공식 manifest와 파일 수·경로·크기·해시가 정확히 일치해야 하며, PostgreSQL 새 볼륨은 schema/data SQL seed 해시 검증이 통과해야만 초기화됩니다. 모든 근거에는 검증된 dataset SHA-256이 함께 기록됩니다.
 
 ### 문서 데이터
 
@@ -197,7 +201,7 @@ local 모드는 외부 모델 없이 결정적이지만 의미 임베딩 모델�
 
 ### 지식그래프
 
-공식 nodes.json과 edges.json을 메모리에 로드합니다. 관계 방향, 최대 홉, 최대 결과 노드 수를 QueryPlan에 명시합니다. P0 규모에서는 전체 스캔으로 충분하며, 운영 확장 시 그래프 DB 또는 PostgreSQL 관계 테이블로 교체할 수 있습니다.
+공식 nodes.json과 edges.json은 크기·노드/간선 수·속성 크기·ID/참조 무결성을 검증한 뒤 메모리에 로드합니다. outgoing/incoming 인접 인덱스로 관계 방향, 최대 홉, 최대 시작점·결과 노드 수를 QueryPlan 예산 안에서 탐색합니다. 운영 확장 시 그래프 DB 또는 PostgreSQL 관계 테이블로 교체할 수 있습니다.
 
 ## 8. 런타임 프로필
 
@@ -238,9 +242,9 @@ local 모드는 외부 모델 없이 결정적이지만 의미 임베딩 모델�
 
 ## 11. 알려진 제한
 
-1. 공식 30문항은 결정적 템플릿으로 계획하며 자유 표현은 선택형 Gemma 4 fallback으로 처리합니다. 이는 범용 NL2SQL 정확도를 보장하지 않습니다.
+1. 공식 30문항은 결정적 템플릿으로 계획하며 자유 표현은 선택형 Gemma 4로 처리합니다. 모델 장애 시 알려진 문서 질의만 bounded 검색으로 전환하고 그 밖의 미확인 계획은 fail-closed 처리합니다. 이는 범용 NL2SQL 정확도를 보장하지 않습니다.
 2. 로컬 벡터 기준선 수치는 pgvector 의미 검색 품질이 아닙니다.
-3. Ollama 계획·답변 E2E는 검증했지만 CPU 단일 관측 지연이 33.6~58.8초로 실시간 운영에는 최적화가 필요합니다.
+3. Ollama 계획·답변 E2E는 선행 실모델 실행에서 검증했지만 CPU 지연이 크고 7.2GB 모델은 동시 실행 프로그램으로 가용 메모리가 부족하면 로딩에 실패할 수 있습니다. 최종 강화본은 이 경우 안전 폴백을 사용하며 실시간 운영에는 GPU·소형 모델·전용 메모리가 필요합니다.
 4. 웹 콘솔의 역할은 서버 환경에서 고정하지만 사용자 인증 시스템은 아닙니다. 외부 공개에는 OIDC/RBAC와 TLS 역프록시가 필요합니다.
 5. 파일 원장은 HMAC 서명과 프로세스 간 잠금을 제공하지만 외부 타임스탬프나 WORM 보관은 제공하지 않습니다.
 6. 그래프는 메모리 구현이라 대규모 데이터 성능을 대표하지 않습니다.

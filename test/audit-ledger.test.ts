@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { AuditRecordInput } from "../src/evidence/ledger.ts";
 import type { AuditCheckpoint, AuditRecord } from "../src/evidence/ledger.ts";
-import { auditQueryDigest, InMemoryAuditLedger, JsonlAuditLedger, verifyAuditCheckpoint, verifyAuditRecords } from "../src/evidence/ledger.ts";
+import { auditQueryDigest, InMemoryAuditLedger, JsonlAuditLedger, projectedAuditRecordCount, requiredAuditRecordSlots, verifyAuditCheckpoint, verifyAuditRecords } from "../src/evidence/ledger.ts";
 
 function record(runId: string, query: string): AuditRecordInput {
   return {
@@ -102,4 +102,23 @@ test("audit records retain only a domain-separated query digest", () => {
   assert.doesNotMatch(digest, /홍길동|123456|user@example\.com|super-secret-value/u);
   assert.equal(digest, auditQueryDigest(sensitive));
   assert.notEqual(digest, auditQueryDigest(`${sensitive}!`));
+});
+
+test("write-ahead audit intent reserves a terminal record slot", () => {
+  assert.equal(requiredAuditRecordSlots("started"), 2);
+  assert.equal(requiredAuditRecordSlots("executed"), 1);
+  assert.equal(requiredAuditRecordSlots("failed"), 1);
+});
+
+test("every concurrent audit intent retains its own terminal reservation", () => {
+  const first = { ...record("run-1", "first"), status: "started" as const };
+  const second = { ...record("run-2", "second"), status: "started" as const };
+  assert.equal(projectedAuditRecordCount([], first), 2);
+  assert.equal(projectedAuditRecordCount([first], second), 4);
+  assert.equal(projectedAuditRecordCount([first, second], record("run-1", "first")), 4);
+  assert.throws(() => projectedAuditRecordCount([first], first), /duplicate audit run lifecycle/u);
+  assert.throws(
+    () => projectedAuditRecordCount([first, record("run-1", "first")], record("run-1", "again")),
+    /duplicate audit run lifecycle/u,
+  );
 });

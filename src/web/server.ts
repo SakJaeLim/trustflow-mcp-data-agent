@@ -9,6 +9,7 @@ import { createRuntime, type TrustFlowRuntime } from "../runtime.ts";
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = resolve(currentDirectory, "public");
+const MAX_REQUEST_BODY_BYTES = 64 * 1_024;
 
 const staticFiles: Record<string, { path: string; type: string }> = {
   "/": { path: resolve(publicDirectory, "index.html"), type: "text/html; charset=utf-8" },
@@ -44,14 +45,26 @@ function json(response: ServerResponse, status: number, payload: unknown): void 
   response.end(JSON.stringify(payload));
 }
 
-async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
+async function body(request: IncomingMessage, timeoutMs: number): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
   let length = 0;
-  for await (const chunk of request) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-    length += buffer.length;
-    if (length > 64 * 1024) throw new HttpError(413, "request_too_large");
-    chunks.push(buffer);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    request.destroy(new Error("request_body_timeout"));
+  }, timeoutMs);
+  try {
+    for await (const chunk of request) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      length += buffer.length;
+      if (length > MAX_REQUEST_BODY_BYTES) throw new HttpError(413, "request_too_large");
+      chunks.push(buffer);
+    }
+  } catch (error) {
+    if (timedOut) throw new HttpError(408, "request_body_timeout");
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
   try {
     return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}") as Record<string, unknown>;
@@ -63,6 +76,7 @@ async function body(request: IncomingMessage): Promise<Record<string, unknown>> 
 export interface WebServerOptions {
   maxConcurrentRequests?: number;
   maxRequestsPerMinute?: number;
+  bodyTimeoutMs?: number;
 }
 
 function loopbackHost(request: IncomingMessage): boolean {
@@ -102,6 +116,7 @@ function scenario(id: string): QueryPlan {
 export function createPolicyGraphWebServer(runtime: TrustFlowRuntime, options: WebServerOptions = {}): Server {
   const maxConcurrentRequests = options.maxConcurrentRequests ?? 4;
   const maxRequestsPerMinute = options.maxRequestsPerMinute ?? 60;
+  const bodyTimeoutMs = Math.min(Math.max(options.bodyTimeoutMs ?? 10_000, 1_000), 30_000);
   const requestWindows = new Map<string, { startedAt: number; count: number }>();
   let activeRequests = 0;
 
@@ -117,7 +132,7 @@ export function createPolicyGraphWebServer(runtime: TrustFlowRuntime, options: W
     return current.count <= maxRequestsPerMinute;
   };
 
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     const requestId = randomUUID();
     try {
       const url = new URL(request.url ?? "/", "http://127.0.0.1");
@@ -137,8 +152,7 @@ export function createPolicyGraphWebServer(runtime: TrustFlowRuntime, options: W
         return;
       }
       if (request.method === "GET" && url.pathname === "/api/examples") {
-        const questions = JSON.parse(await readFile(resolve("data/companyx/questions.json"), "utf8")) as unknown;
-        json(response, 200, questions);
+        json(response, 200, runtime.officialQuestions);
         return;
       }
       if (request.method === "POST" && (url.pathname === "/api/ask" || url.pathname === "/api/scenario")) {
@@ -146,13 +160,17 @@ export function createPolicyGraphWebServer(runtime: TrustFlowRuntime, options: W
         if (!String(request.headers["content-type"] ?? "").toLocaleLowerCase("en-US").startsWith("application/json")) {
           return json(response, 415, { error: "application_json_required" });
         }
+        const declaredLength = Number(request.headers["content-length"]);
+        if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BODY_BYTES) {
+          return json(response, 413, { error: "request_too_large" });
+        }
         if (!withinRateLimit(request) || activeRequests >= maxConcurrentRequests) {
           response.setHeader("retry-after", "1");
           return json(response, 429, { error: "request_limit_exceeded" });
         }
         activeRequests += 1;
         try {
-          const input = await body(request);
+          const input = await body(request, bodyTimeoutMs);
           if (url.pathname === "/api/ask") {
             const question = typeof input.question === "string" ? input.question.trim() : "";
             if (!question) return json(response, 400, { error: "question_required" });
@@ -182,6 +200,10 @@ export function createPolicyGraphWebServer(runtime: TrustFlowRuntime, options: W
       json(response, 500, { error: "internal_error", requestId });
     }
   });
+  server.requestTimeout = bodyTimeoutMs;
+  server.headersTimeout = Math.min(bodyTimeoutMs, 5_000);
+  server.keepAliveTimeout = 5_000;
+  return server;
 }
 
 async function main(): Promise<void> {

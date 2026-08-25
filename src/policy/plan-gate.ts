@@ -39,7 +39,15 @@ const ALLOWED_RELATIONS = new Set([
 ]);
 
 const SENSITIVE_COLUMNS = new Set(["salary", "email", "contact_name", "contact_email"]);
+const ALLOWED_COLUMNS = new Set([
+  "id", "name", "head_id", "created_at", "email", "position", "dept_id", "hire_date", "salary", "is_active",
+  "industry", "region", "company_size", "contact_name", "contact_email", "registered_at", "category", "description",
+  "price_monthly", "version", "release_date", "status", "client_id", "product_id", "manager_id", "contract_type",
+  "amount", "start_date", "end_date", "contract_id", "budget", "sale_date", "quarter", "assignee_id", "title",
+  "priority", "resolved_at",
+]);
 const UNSAFE_QUERY_INTENT = /\b(?:DROP|DELETE|TRUNCATE|ALTER|GRANT|REVOKE|PG_SLEEP|PG_READ_FILE|SHELL\.EXEC)\b|(?:테이블|데이터).*(?:삭제|지워)|(?:삭제|지워).*(?:테이블|데이터)|환경\s*변수.*출력/iu;
+const MAX_SQL_BYTES = 16_384;
 
 export function isUnsafeQueryIntent(question: string): boolean {
   return UNSAFE_QUERY_INTENT.test(question);
@@ -175,6 +183,17 @@ export class PlanGate {
   ): void {
     let sql = step.input.sql.trim();
 
+    if (Buffer.byteLength(sql, "utf8") > MAX_SQL_BYTES) {
+      findings.push({
+        code: "SQL_COMPLEXITY_BUDGET_EXCEEDED",
+        stepId: step.id,
+        severity: "critical",
+        message: `SQL은 UTF-8 ${MAX_SQL_BYTES}바이트를 초과할 수 없습니다.`,
+        repairable: false,
+      });
+      return;
+    }
+
     if (/--|\/\*/.test(sql)) {
       findings.push({
         code: "SQL_COMMENT_BLOCKED",
@@ -227,6 +246,16 @@ export class PlanGate {
       });
     }
 
+    if (analysis.keywords.length > 0) {
+      findings.push({
+        code: "SQL_KEYWORD_EXPRESSION_NOT_ALLOWED",
+        stepId: step.id,
+        severity: "critical",
+        message: `세션·시스템 SQL 키워드 표현식은 허용하지 않습니다: ${analysis.keywords.join(", ")}`,
+        repairable: false,
+      });
+    }
+
     const blockedSchemas = analysis.schemas.filter((schema) => schema !== "public");
     if (blockedSchemas.length > 0) {
       findings.push({
@@ -268,7 +297,13 @@ export class PlanGate {
       });
     }
 
-    if (analysis.crossJoin || analysis.relationCount > 3) {
+    if (
+      analysis.crossJoin
+      || analysis.relationCount > 3
+      || analysis.astNodeCount > 512
+      || analysis.maxAstDepth > 32
+      || analysis.recursiveCte
+    ) {
       findings.push({
         code: "SQL_COMPLEXITY_BUDGET_EXCEEDED",
         stepId: step.id,
@@ -293,7 +328,7 @@ export class PlanGate {
         code: "SQL_WHOLE_ROW_PROJECTION",
         stepId: step.id,
         severity: "critical",
-        message: "복합행 표현을 통한 전체 열 조회는 허용하지 않습니다.",
+        message: "복합행 표현을 통한 전체 열 조회·조건 평가는 허용하지 않습니다.",
         repairable: false,
       });
     }
@@ -305,6 +340,23 @@ export class PlanGate {
         stepId: step.id,
         severity: "critical",
         message: `허용 목록 밖의 테이블입니다: ${[...new Set(unknownTables)].join(", ")}`,
+        repairable: false,
+      });
+    }
+
+    const allowedAliasReferences = new Set(analysis.allowedAliasReferences);
+    const invalidAliasReferences = new Set(analysis.invalidAliasReferences);
+    const unknownColumns = analysis.columns.filter((name) =>
+      name !== "*"
+      && !ALLOWED_COLUMNS.has(name)
+      && !(allowedAliasReferences.has(name) && !invalidAliasReferences.has(name))
+    );
+    if (unknownColumns.length > 0) {
+      findings.push({
+        code: "SQL_UNKNOWN_COLUMN",
+        stepId: step.id,
+        severity: "critical",
+        message: `허용 목록 밖의 열 또는 시스템 메타데이터입니다: ${[...new Set(unknownColumns)].join(", ")}`,
         repairable: false,
       });
     }

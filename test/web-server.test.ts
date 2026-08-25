@@ -37,6 +37,12 @@ test("web demo serves health, executes a question, and blocks an attack", async 
       body: JSON.stringify({ question: "현재 활성 상태인 계약 수는 몇 개야?" }),
     });
     assert.equal(wrongType.status, 415);
+    const oversized = await fetch(`${base}/api/ask`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ question: "x".repeat(70_000) }),
+    });
+    assert.equal(oversized.status, 413);
     const answer = await fetch(`${base}/api/ask`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question: "Client-A가 사용 중인 제품 목록은?", role: "analyst" }) }).then((response) => response.json()) as { status: string; answer?: { verified: boolean } };
     assert.equal(answer.status, "executed");
     assert.equal(answer.answer?.verified, true);

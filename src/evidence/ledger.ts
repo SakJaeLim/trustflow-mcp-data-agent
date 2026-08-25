@@ -2,7 +2,59 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname } from "node:path";
 import { sha256 } from "../core/hash.ts";
-import type { QueryPlan, RunResult } from "../core/model.ts";
+import type { PolicyDecision, QueryPlan, RunResult } from "../core/model.ts";
+
+export const MAX_AUDIT_LEDGER_BYTES = 64 * 1_048_576;
+export const MAX_AUDIT_RECORDS = 50_000;
+export const MAX_AUDIT_RECORD_BYTES = 64 * 1_024;
+
+export function requiredAuditRecordSlots(status: AuditRecordInput["status"]): number {
+  return status === "started" ? 2 : 1;
+}
+
+interface AuditLifecycle {
+  outstanding: Set<string>;
+  seen: Set<string>;
+  errors: string[];
+}
+
+function auditLifecycle(records: readonly Pick<AuditRecordInput, "runId" | "status">[]): AuditLifecycle {
+  const outstanding = new Set<string>();
+  const seen = new Set<string>();
+  const errors: string[] = [];
+  records.forEach((record, index) => {
+    if (record.status === "started") {
+      if (seen.has(record.runId)) errors.push(`record ${index + 1}: duplicate run start`);
+      seen.add(record.runId);
+      outstanding.add(record.runId);
+      return;
+    }
+    if (outstanding.has(record.runId)) {
+      outstanding.delete(record.runId);
+    } else if (seen.has(record.runId)) {
+      errors.push(`record ${index + 1}: duplicate run terminal`);
+    }
+    seen.add(record.runId);
+  });
+  return { outstanding, seen, errors };
+}
+
+export function projectedAuditRecordCount(
+  records: readonly Pick<AuditRecordInput, "runId" | "status">[],
+  next: Pick<AuditRecordInput, "runId" | "status">,
+): number {
+  const lifecycle = auditLifecycle(records);
+  if (lifecycle.errors.length > 0) throw new Error(lifecycle.errors.join(", "));
+  if (next.status === "started") {
+    if (lifecycle.seen.has(next.runId)) throw new Error("duplicate audit run lifecycle");
+    lifecycle.outstanding.add(next.runId);
+  } else if (lifecycle.outstanding.has(next.runId)) {
+    lifecycle.outstanding.delete(next.runId);
+  } else if (lifecycle.seen.has(next.runId)) {
+    throw new Error("duplicate audit run lifecycle");
+  }
+  return records.length + 1 + lifecycle.outstanding.size;
+}
 
 export interface AuditRecordInput {
   schemaVersion: "1.0";
@@ -10,7 +62,7 @@ export interface AuditRecordInput {
   runId: string;
   queryDigest: string;
   actor: QueryPlan["actor"];
-  status: RunResult["status"];
+  status: RunResult["status"] | "started";
   decision: RunResult["policy"]["decision"];
   originalPlanHash: string;
   executablePlanHash?: string;
@@ -80,6 +132,10 @@ export class JsonlAuditLedger implements AuditLedger {
         if (!verification.valid) {
           throw new Error(`기존 감사 원장의 해시 체인이 손상되었습니다: ${verification.errors.join(", ")}`);
         }
+        const lifecycle = auditLifecycle(records);
+        if (lifecycle.errors.length > 0) {
+          throw new Error(`기존 감사 원장의 실행 수명주기가 손상되었습니다: ${lifecycle.errors.join(", ")}`);
+        }
         const checkpoint = await this.readCheckpoint();
         if (this.checkpointPath) {
           if (!this.signingSecret) throw new Error("Audit checkpoint signing is not configured.");
@@ -95,9 +151,24 @@ export class JsonlAuditLedger implements AuditLedger {
         }
         const previous = records.at(-1);
         const finalized = finalizeRecord(record, previous, this.signingSecret);
+        const serialized = `${JSON.stringify(finalized)}\n`;
+        const serializedBytes = Buffer.byteLength(serialized, "utf8");
+        if (serializedBytes > MAX_AUDIT_RECORD_BYTES) {
+          throw new Error(`감사 레코드가 ${MAX_AUDIT_RECORD_BYTES}바이트를 초과했습니다.`);
+        }
+        const projectedRecords = projectedAuditRecordCount(records, record);
+        if (projectedRecords > MAX_AUDIT_RECORDS) {
+          throw new Error(`감사 원장이 ${MAX_AUDIT_RECORDS}개 레코드 상한에 도달했습니다.`);
+        }
+        const currentBytes = await this.currentLedgerBytes();
+        const outstandingAfterAppend = projectedRecords - (records.length + 1);
+        const requiredBytes = serializedBytes + outstandingAfterAppend * MAX_AUDIT_RECORD_BYTES;
+        if (currentBytes + requiredBytes > MAX_AUDIT_LEDGER_BYTES) {
+          throw new Error(`감사 원장이 ${MAX_AUDIT_LEDGER_BYTES}바이트 상한에 도달했습니다.`);
+        }
         const handle = await open(this.path, "a");
         try {
-          await handle.writeFile(`${JSON.stringify(finalized)}\n`, "utf8");
+          await handle.writeFile(serialized, "utf8");
           await handle.sync();
         } finally {
           await handle.close();
@@ -119,12 +190,29 @@ export class JsonlAuditLedger implements AuditLedger {
 
   private async readAll(): Promise<AuditRecord[]> {
     try {
-      return (await readFile(this.path, "utf8"))
-        .split(/\r?\n/)
-        .filter(Boolean)
-        .map((line) => JSON.parse(line) as AuditRecord);
+      const details = await stat(this.path);
+      if (!details.isFile() || details.size > MAX_AUDIT_LEDGER_BYTES) {
+        throw new Error(`감사 원장이 ${MAX_AUDIT_LEDGER_BYTES}바이트 안전 상한을 초과했습니다.`);
+      }
+      const lines = (await readFile(this.path, "utf8")).split(/\r?\n/).filter(Boolean);
+      if (lines.length > MAX_AUDIT_RECORDS) throw new Error(`감사 원장이 ${MAX_AUDIT_RECORDS}개 레코드 상한을 초과했습니다.`);
+      return lines.map((line, index) => {
+        if (Buffer.byteLength(line, "utf8") > MAX_AUDIT_RECORD_BYTES) {
+          throw new Error(`감사 레코드 ${index + 1}이 ${MAX_AUDIT_RECORD_BYTES}바이트를 초과했습니다.`);
+        }
+        return JSON.parse(line) as AuditRecord;
+      });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
+    }
+  }
+
+  private async currentLedgerBytes(): Promise<number> {
+    try {
+      return (await stat(this.path)).size;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return 0;
       throw error;
     }
   }
@@ -176,7 +264,7 @@ export class JsonlAuditLedger implements AuditLedger {
     await mkdir(dirname(this.path), { recursive: true });
     const lockPath = `${this.path}.lock`;
     const owner = `${process.pid}:${randomUUID()}`;
-    const deadline = Date.now() + 10_000;
+    const deadline = Date.now() + 30_000;
     while (true) {
       let lock;
       try {
@@ -184,13 +272,6 @@ export class JsonlAuditLedger implements AuditLedger {
       } catch (error) {
         const code = (error as NodeJS.ErrnoException).code;
         if (code !== "EEXIST" && code !== "EPERM") throw error;
-        try {
-          const lockStat = await stat(lockPath);
-          if (Date.now() - lockStat.mtimeMs > 30_000) await unlink(lockPath);
-        } catch (statError) {
-          const statCode = (statError as NodeJS.ErrnoException).code;
-          if (statCode !== "ENOENT" && statCode !== "EPERM" && statCode !== "EBUSY") throw statError;
-        }
         if (Date.now() >= deadline) throw new Error("감사 원장 잠금 획득 시간이 초과되었습니다.");
         await new Promise((resolveWait) => setTimeout(resolveWait, 20 + Math.floor(Math.random() * 30)));
         continue;
@@ -242,6 +323,31 @@ export function toAuditRecord(result: RunResult, approval?: { approverId: string
       tool: execution.tool,
       durationMs: execution.durationMs,
     })),
+  };
+}
+
+export function toAuditIntent(
+  runId: string,
+  policy: PolicyDecision,
+  approval?: { approverId: string; approvalId: string },
+): AuditRecordInput {
+  const plan = policy.originalPlan;
+  return {
+    schemaVersion: "1.0",
+    recordedAt: new Date().toISOString(),
+    runId,
+    queryDigest: auditQueryDigest(plan.query),
+    actor: plan.actor,
+    status: "started",
+    decision: policy.decision,
+    originalPlanHash: sha256(plan),
+    executablePlanHash: policy.executablePlan ? sha256(policy.executablePlan) : undefined,
+    findingCodes: policy.findings.map((finding) => finding.code),
+    repairCodes: policy.repairs.map((repair) => repair.code),
+    approvedBy: approval?.approverId,
+    approvalId: approval?.approvalId,
+    evidenceIds: [],
+    toolCalls: [],
   };
 }
 

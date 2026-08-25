@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-24T04:22:04.045Z",
+  "generatedAt": "2026-08-24T06:09:25.780Z",
   "status": "ok",
   "runtime": "postgres-pgvector",
   "model": "gemma4:e2b",
   "evidenceAnswer": {
     "question": "Product-C1 설치 방법이 궁금해",
     "decision": "ALLOW",
-    "generator": "ollama",
-    "safeFallbackUsed": false,
+    "generator": "deterministic",
+    "safeFallbackUsed": true,
     "verified": true,
     "firstSource": "doc://companyx/DOC-011"
   },

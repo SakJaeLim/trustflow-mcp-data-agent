@@ -1,6 +1,12 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { GraphHop, GraphStep } from "../core/model.ts";
+import { readRegularFileBounded } from "../core/safe-file.ts";
+import type { CompanyXIntegrity } from "../core/companyx-integrity.ts";
+
+const MAX_GRAPH_FILE_BYTES = 8 * 1_048_576;
+const MAX_GRAPH_NODES = 1_000;
+const MAX_GRAPH_EDGES = 10_000;
+const MAX_GRAPH_PROPERTIES_BYTES = 16_384;
 
 export interface GraphNode {
   id: string;
@@ -40,19 +46,47 @@ export class GraphStore {
   private readonly nodes: GraphNode[];
   private readonly edges: GraphEdge[];
   private readonly nodesById: Map<string, GraphNode>;
+  private readonly outgoing: Map<string, GraphEdge[]>;
+  private readonly incoming: Map<string, GraphEdge[]>;
+  readonly datasetSha256?: string;
 
-  constructor(nodes: GraphNode[], edges: GraphEdge[]) {
+  constructor(nodes: GraphNode[], edges: GraphEdge[], datasetSha256?: string) {
     this.nodes = nodes;
     this.edges = edges;
     this.nodesById = new Map(nodes.map((node) => [node.id, node]));
+    this.outgoing = new Map();
+    this.incoming = new Map();
+    this.datasetSha256 = datasetSha256;
+    for (const edge of edges) {
+      const outgoingKey = this.edgeKey(edge.relation, edge.source);
+      const incomingKey = this.edgeKey(edge.relation, edge.target);
+      this.outgoing.set(outgoingKey, [...(this.outgoing.get(outgoingKey) ?? []), edge]);
+      this.incoming.set(incomingKey, [...(this.incoming.get(incomingKey) ?? []), edge]);
+    }
   }
 
-  static async fromDirectory(graphDirectory: string): Promise<GraphStore> {
+  static async fromDirectory(graphDirectory: string, datasetSha256?: string): Promise<GraphStore> {
     const [nodesText, edgesText] = await Promise.all([
-      readFile(join(graphDirectory, "nodes.json"), "utf8"),
-      readFile(join(graphDirectory, "edges.json"), "utf8"),
+      readRegularFileBounded(join(graphDirectory, "nodes.json"), MAX_GRAPH_FILE_BYTES),
+      readRegularFileBounded(join(graphDirectory, "edges.json"), MAX_GRAPH_FILE_BYTES),
     ]);
-    return new GraphStore(JSON.parse(nodesText) as GraphNode[], JSON.parse(edgesText) as GraphEdge[]);
+    const nodes = parseNodes(JSON.parse(nodesText.bytes.toString("utf8")) as unknown);
+    const edges = parseEdges(JSON.parse(edgesText.bytes.toString("utf8")) as unknown, new Set(nodes.map((node) => node.id)));
+    return new GraphStore(nodes, edges, datasetSha256);
+  }
+
+  static fromIntegrity(integrity: CompanyXIntegrity): GraphStore {
+    const nodeBytes = integrity.readFile("graph/nodes.json");
+    const edgeBytes = integrity.readFile("graph/edges.json");
+    if (nodeBytes.byteLength > MAX_GRAPH_FILE_BYTES || edgeBytes.byteLength > MAX_GRAPH_FILE_BYTES) {
+      throw new Error(`Graph files must not exceed ${MAX_GRAPH_FILE_BYTES} bytes.`);
+    }
+    const nodes = parseNodes(JSON.parse(nodeBytes.toString("utf8")) as unknown);
+    const edges = parseEdges(
+      JSON.parse(edgeBytes.toString("utf8")) as unknown,
+      new Set(nodes.map((node) => node.id)),
+    );
+    return new GraphStore(nodes, edges, integrity.datasetSha256);
   }
 
   get nodeCount(): number {
@@ -87,32 +121,27 @@ export class GraphStore {
       const ranking = starts
         .map((node) => ({
           node,
-          count: this.edges.filter((edge) =>
-            edge.relation === hop.relation
-            && (hop.direction === "out" ? edge.source === node.id : edge.target === node.id)
-          ).length,
+          count: this.matchingEdges(node.id, hop).length,
         }))
         .sort((left, right) => right.count - left.count || left.node.name.localeCompare(right.node.name, "ko-KR"))
         .slice(0, input.maxNodes ?? 20);
       return {
         mode: "rank",
-        start: starts[0],
-        starts,
+        start: ranking[0]?.node,
+        starts: ranking.map((item) => item.node),
         paths: [],
         resultNodes: ranking.map((item) => item.node),
         ranking,
       };
     }
 
-    let frontier: FrontierItem[] = starts.map((node) => ({ node, nodes: [node], edges: [] }));
+    const boundedStarts = starts.slice(0, input.maxNodes ?? 20);
+    let frontier: FrontierItem[] = boundedStarts.map((node) => ({ node, nodes: [node], edges: [] }));
 
     for (const hop of input.path) {
       const next: FrontierItem[] = [];
       for (const item of frontier) {
-        const matching = this.edges.filter((edge) => {
-          if (edge.relation !== hop.relation) return false;
-          return hop.direction === "out" ? edge.source === item.node.id : edge.target === item.node.id;
-        });
+        const matching = this.matchingEdges(item.node.id, hop);
 
         for (const edge of matching) {
           const targetId = hop.direction === "out" ? edge.target : edge.source;
@@ -134,8 +163,8 @@ export class GraphStore {
     const resultNodes = [...new Map(frontier.map((item) => [item.node.id, item.node])).values()];
     return {
       mode: "traverse",
-      start: starts[0],
-      starts,
+      start: boundedStarts[0],
+      starts: boundedStarts,
       paths: frontier.map((item) => ({ nodes: item.nodes, edges: item.edges })),
       resultNodes,
     };
@@ -152,4 +181,60 @@ export class GraphStore {
       return Object.entries(input.startWhere ?? {}).every(([key, value]) => node.properties[key] === value);
     });
   }
+
+  private edgeKey(relation: string, nodeId: string): string {
+    return `${relation}\0${nodeId}`;
+  }
+
+  private matchingEdges(nodeId: string, hop: GraphHop): GraphEdge[] {
+    return (hop.direction === "out" ? this.outgoing : this.incoming).get(this.edgeKey(hop.relation, nodeId)) ?? [];
+  }
+}
+
+function record(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+function validProperties(value: unknown): value is Record<string, unknown> {
+  const properties = record(value);
+  return Boolean(properties) && Buffer.byteLength(JSON.stringify(properties), "utf8") <= MAX_GRAPH_PROPERTIES_BYTES;
+}
+
+function parseNodes(value: unknown): GraphNode[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_GRAPH_NODES) {
+    throw new Error(`Graph nodes must contain 1-${MAX_GRAPH_NODES} entries.`);
+  }
+  const nodes = value.map((item, index) => {
+    const node = record(item);
+    if (!node
+      || typeof node.id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(node.id)
+      || typeof node.type !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/u.test(node.type)
+      || typeof node.name !== "string" || !node.name.trim() || Buffer.byteLength(node.name, "utf8") > 1_024
+      || !validProperties(node.properties)) throw new Error(`Invalid graph node ${index}.`);
+    return { id: node.id, type: node.type, name: node.name, properties: node.properties };
+  });
+  if (new Set(nodes.map((node) => node.id)).size !== nodes.length) throw new Error("Graph contains duplicate node IDs.");
+  return nodes;
+}
+
+function parseEdges(value: unknown, nodeIds: Set<string>): GraphEdge[] {
+  if (!Array.isArray(value) || value.length > MAX_GRAPH_EDGES) {
+    throw new Error(`Graph edges must contain at most ${MAX_GRAPH_EDGES} entries.`);
+  }
+  return value.map((item, index) => {
+    const edge = record(item);
+    if (!edge
+      || typeof edge.source !== "string" || !nodeIds.has(edge.source)
+      || typeof edge.target !== "string" || !nodeIds.has(edge.target)
+      || typeof edge.relation !== "string" || !/^[A-Z][A-Z0-9_]{0,63}$/u.test(edge.relation)
+      || (edge.properties !== undefined && !validProperties(edge.properties))) {
+      throw new Error(`Invalid graph edge ${index}.`);
+    }
+    return {
+      source: edge.source,
+      target: edge.target,
+      relation: edge.relation,
+      properties: edge.properties as Record<string, unknown> | undefined,
+    };
+  });
 }
