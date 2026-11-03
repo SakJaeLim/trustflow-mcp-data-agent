@@ -47,3 +47,13 @@ TrustFlow는 AI가 만든 데이터 조회 계획을 실행 전에 검사하고,
 정상 조회, 조회 범위 보정, 민감정보 승인 대기, 삭제 요청 차단을 재현합니다.
 승인 대기와 차단 요청은 데이터베이스에 전달되지 않는지 확인하며, 감사기록을
 변조했을 때 탐지되는지도 함께 검사합니다.
+
+## Current dependency limitation (2026-11-03)
+
+The existing CI's 49 tests passed, but its dependency audit blocked the release.
+Compatible dependency updates reduced npm's reported findings from 10 to 2.
+The remaining high-severity report concerns Zod below 4.6.6 and the dependent
+`@airmcp-dev/core` package, which requires Zod 3. A major-version override has not
+been forced: MCP compatibility must be checked before replacing that dependency.
+The audit gate remains enabled. This branch is a reviewable portfolio demo,
+not a production-ready release. Advisory: GHSA-mrhx-c7xc-m3w5.
