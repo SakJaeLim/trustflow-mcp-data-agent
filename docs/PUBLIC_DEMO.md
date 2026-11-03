@@ -48,12 +48,14 @@ TrustFlow는 AI가 만든 데이터 조회 계획을 실행 전에 검사하고,
 승인 대기와 차단 요청은 데이터베이스에 전달되지 않는지 확인하며, 감사기록을
 변조했을 때 탐지되는지도 함께 검사합니다.
 
-## Current dependency limitation (2026-11-03)
+## Dependency remediation (2026-11-03)
 
-The existing CI's 49 tests passed, but its dependency audit blocked the release.
-Compatible dependency updates reduced npm's reported findings from 10 to 2.
-The remaining high-severity report concerns Zod below 4.6.6 and the dependent
-`@airmcp-dev/core` package, which requires Zod 3. A major-version override has not
-been forced: MCP compatibility must be checked before replacing that dependency.
-The audit gate remains enabled. This branch is a reviewable portfolio demo,
-not a production-ready release. Advisory: GHSA-mrhx-c7xc-m3w5.
+The MCP adapter now uses the official SDK 1.32.2 and Zod 4.6.6 directly. The
+intermediate framework that required Zod 3 has been removed rather than overridden.
+The dependency audit gate remains enabled. MCP protocol tests cover initialization,
+tool discovery, invalid input rejection before planning, and sanitized errors.
+The standard-input/output entry point is exercised through a real client process.
+
+Question and approval strings have explicit size limits. Unknown input keys are
+rejected and topK must be a positive integer no greater than 100; the policy gate
+still applies its own execution limits. This is not a general security certification.

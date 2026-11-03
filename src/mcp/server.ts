@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { defineServer, defineTool, type AirServer } from "@airmcp-dev/core";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 import type { Actor, QueryPlan, RunContext, RunResult, ToolName } from "../core/model.ts";
 import { createRuntime, type TrustFlowRuntime } from "../runtime.ts";
 
@@ -40,55 +42,58 @@ async function atMcpBoundary<T>(operation: () => Promise<T>): Promise<T | McpPub
   }
 }
 
-export function createPolicyGraphServer(runtime: TrustFlowRuntime): AirServer {
-  return defineServer({
-    name: "trustflow-companyx",
-    version: "0.3.0",
-    description: "TrustFlow MCP data tools for Company-X, gated by the PolicyGraph safety engine",
-    transport: { type: "stdio" },
-    logging: { level: "info", format: "pretty" },
-    tools: [
-      defineTool("nl2sql", {
-        description: "Convert a Company-X natural-language analytics question to bounded read-only SQL and execute it after PolicyGraph validation.",
-        params: {
-          question: { type: "string", description: "Natural-language Company-X analytics question" },
-          approvalReceipt: { type: "string", description: "Optional short-lived admin-signed approval receipt", optional: true },
-        },
-        handler: async ({ question, approvalReceipt }) => atMcpBoundary(async () => execute(
-            runtime,
-            await naturalLanguagePlan(String(question), runtime, "sql.query"),
-            { approvalReceipt: typeof approvalReceipt === "string" ? approvalReceipt : undefined },
-          )),
-      }),
-      defineTool("vector_search", {
-        description: "Search Company-X documents after enforcing evidence and data-scope budgets.",
-        params: {
-          question: { type: "string", description: "Natural-language document question" },
-          topK: { type: "number", description: "Maximum results", optional: true },
-        },
-        handler: async ({ question, topK }) => atMcpBoundary(async () => {
-          const plan = await naturalLanguagePlan(String(question), runtime, "vector.search");
-          const step = plan.steps[0];
-          if (step?.tool === "vector.search" && typeof topK === "number") step.input.topK = Math.trunc(topK);
-          return execute(runtime, plan);
-        }),
-      }),
-      defineTool("knowledge_graph", {
-        description: "Resolve a Company-X relationship question with allow-listed traversals or bounded relation aggregation.",
-        params: { question: { type: "string", description: "Natural-language Company-X relationship question" } },
-        handler: async ({ question }) => atMcpBoundary(async () => execute(
-            runtime,
-            await naturalLanguagePlan(String(question), runtime, "graph.traverse"),
-          )),
-      }),
-    ],
-  });
+// Bound user-controlled strings before they reach planning or approval parsing.
+const questionSchema = z.string().trim().min(1).max(8_192);
+const approvalSchema = z.string().max(16_384).optional();
+
+export function createPolicyGraphServer(runtime: TrustFlowRuntime): McpServer {
+  const server = new McpServer({ name: "trustflow-companyx", version: "0.3.0" });
+  const response = async (operation: () => Promise<RunResult>) => {
+    const result = await atMcpBoundary(operation);
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify(result) }],
+      ...("ok" in result && result.ok === false ? { isError: true } : {}),
+    };
+  };
+  server.registerTool("nl2sql", {
+    description: "Convert a Company-X question to bounded read-only SQL after PolicyGraph validation.",
+    inputSchema: z.strictObject({ question: questionSchema, approvalReceipt: approvalSchema }),
+  }, async ({ question, approvalReceipt }) => response(async () => execute(
+    runtime, await naturalLanguagePlan(question, runtime, "sql.query"), { approvalReceipt },
+  )));
+  server.registerTool("vector_search", {
+    description: "Search Company-X documents after enforcing evidence and data-scope budgets.",
+    inputSchema: z.strictObject({ question: questionSchema, topK: z.number().int().positive().max(100).optional() }),
+  }, async ({ question, topK }) => response(async () => {
+    const plan = await naturalLanguagePlan(question, runtime, "vector.search");
+    const step = plan.steps[0];
+    if (step?.tool === "vector.search" && topK !== undefined) step.input.topK = topK;
+    return execute(runtime, plan);
+  }));
+  server.registerTool("knowledge_graph", {
+    description: "Resolve Company-X relationships through allow-listed, bounded traversals.",
+    inputSchema: z.strictObject({ question: questionSchema }),
+  }, async ({ question }) => response(async () => execute(
+    runtime, await naturalLanguagePlan(question, runtime, "graph.traverse"),
+  )));
+  return server;
 }
 
 async function main(): Promise<void> {
   const runtime = await createRuntime();
   const server = createPolicyGraphServer(runtime);
-  await server.start();
+  const transport = new StdioServerTransport();
+  let closing = false;
+  const close = async () => {
+    if (closing) return;
+    closing = true;
+    await server.close();
+    await runtime.close();
+  };
+  process.once("SIGINT", () => { void close(); });
+  process.once("SIGTERM", () => { void close(); });
+  server.server.onclose = () => { void close(); };
+  await server.connect(transport);
 }
 
 export const createTrustFlowServer = createPolicyGraphServer;
