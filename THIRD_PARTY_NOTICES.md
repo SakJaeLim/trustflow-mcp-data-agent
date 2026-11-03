@@ -4,8 +4,8 @@ TrustFlow MCP 데이터 에이전트 자체 코드는 Apache License 2.0으로 �
 
 | 구성요소 | 버전 | 라이선스 | 공식 저장소 |
 |---|---:|---|---|
-| @airmcp-dev/core | 0.1.6 | Apache-2.0 | https://github.com/airmcp-dev/air |
-| @modelcontextprotocol/sdk | 1.30.0 | MIT | https://github.com/modelcontextprotocol/typescript-sdk |
+| @modelcontextprotocol/sdk | 1.32.2 | MIT | https://github.com/modelcontextprotocol/typescript-sdk |
+| zod | 4.6.6 | MIT | https://github.com/colinhacks/zod |
 | pg (node-postgres) | 8.23.0 | MIT | https://github.com/brianc/node-postgres |
 | pgsql-ast-parser | 12.0.2 | MIT | https://github.com/oguimbal/pgsql-ast-parser |
 | fflate | 0.8.3 | MIT | https://github.com/101arrowz/fflate |
